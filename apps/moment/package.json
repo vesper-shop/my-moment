@@ -12,18 +12,18 @@
   "dependencies": {
     "@6over3/zeroperl-ts": "1.0.10",
     "@mapbox/mapbox-gl-language": "1.0.1",
-    "@modelcontextprotocol/server": "2.3.1",
+    "@modelcontextprotocol/server": "2.4.0",
     "@my-moment/ui": "workspace:*",
     "@resvg/resvg-wasm": "2.6.2",
     "@solid-primitives/intersection-observer": "3.0.0-next.3",
     "@tanstack/solid-router": "2.0.0-rc.8",
     "@uswriting/exiftool": "1.0.9",
-    "better-auth": "1.7.12",
+    "better-auth": "1.7.15",
     "drizzle-orm": "0.45.4",
-    "heic-to": "1.6.6",
-    "hono": "4.13.13",
-    "lucide-solid": "1.61.0",
-    "mapbox-gl": "3.33.0",
+    "heic-to": "1.6.7",
+    "hono": "4.13.16",
+    "lucide-solid": "1.66.0",
+    "mapbox-gl": "3.34.1",
     "thumbhash": "0.1.1",
     "yaml": "2.9.1",
     "zod": "4.6.7"
@@ -32,6 +32,6 @@
     "@tanstack/router-plugin": "1.168.48",
     "@testing-library/jest-dom": "7.0.1",
     "sharp": "0.35.5",
-    "void": "1.2.1"
+    "void": "1.4.0"
   }
 }

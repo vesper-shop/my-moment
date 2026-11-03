@@ -126,7 +126,7 @@ function MessagesPage() {
     { defer: true },
   );
 
-  const startSignIn = () => signIn.social({ provider: "google", callbackURL: "/messages" });
+  const startSignIn = () => signIn.social({ provider: "you-find-me", callbackURL: "/messages" });
 
   const openComposer = () => {
     if (!user()) return startSignIn();

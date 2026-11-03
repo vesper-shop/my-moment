@@ -20,7 +20,7 @@
   "devDependencies": {
     "@solidjs/web": "2.0.0-rc.14",
     "@tailwindcss/vite": "4.3.3",
-    "@types/node": "26.6.5",
+    "@types/node": "26.6.6",
     "solid-js": "2.0.0-rc.14",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",

@@ -1,12 +1,12 @@
-import { customSession } from "better-auth/plugins";
+import { customSession, genericOAuth } from "better-auth/plugins";
 import { defineAuth } from "void/auth";
 import type { ValidatedEnv } from "void/env";
 import { HOST_DISPLAY_NAME } from "./src/lib/identity.ts";
 
-type AuthEnv = Pick<ValidatedEnv, "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" | "ALLOWED_EMAIL">;
+type AuthEnv = Pick<ValidatedEnv, "YOU_FIND_ME_CLIENT_SECRET" | "ALLOWED_EMAIL">;
 
 export default defineAuth(({ defaults, env: authEnv, request }) => {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ALLOWED_EMAIL } = authEnv as AuthEnv;
+  const { YOU_FIND_ME_CLIENT_SECRET, ALLOWED_EMAIL } = authEnv as AuthEnv;
 
   return {
     ...defaults,
@@ -19,11 +19,9 @@ export default defineAuth(({ defaults, env: authEnv, request }) => {
       ...defaults.emailAndPassword,
       enabled: false,
     },
-    socialProviders: {
-      google: {
-        clientId: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-      },
+    account: {
+      ...defaults.account,
+      accountLinking: { trustedProviders: ["you-find-me"] },
     },
     session: {
       ...defaults.session,
@@ -33,6 +31,20 @@ export default defineAuth(({ defaults, env: authEnv, request }) => {
     },
     plugins: [
       ...(defaults.plugins ?? []),
+      genericOAuth({
+        config: [
+          {
+            providerId: "you-find-me",
+            name: "you-find.me",
+            discoveryUrl: "https://you-find.me/api/auth/.well-known/openid-configuration",
+            clientId: "moment",
+            clientSecret: YOU_FIND_ME_CLIENT_SECRET,
+            scopes: ["openid", "profile", "email"],
+            tokenEndpointAuth: { method: "client_secret_basic" },
+            pkce: true,
+          },
+        ],
+      }),
       customSession(async ({ user, session }) => ({
         user:
           ALLOWED_EMAIL && user.email === ALLOWED_EMAIL

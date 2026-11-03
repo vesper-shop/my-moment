@@ -1,5 +1,5 @@
 diff --git a/dist/source/Icon.jsx b/dist/source/Icon.jsx
-index 931f81098df19357af1684ecf7c58c69df931d67..cad6cefed26500611dbefc2c92d4a9ef81c6760c 100644
+index 9903ecde300dfeea7849614bbab36a9de7471fed..66833c1652bff234d43b946f6b416ccc309e83f1 100644
 --- a/dist/source/Icon.jsx
 +++ b/dist/source/Icon.jsx
 @@ -6,8 +6,8 @@
@@ -34,7 +34,7 @@ index 931f81098df19357af1684ecf7c58c69df931d67..cad6cefed26500611dbefc2c92d4a9ef
    const icon = createMemo(
      () => localProps.icon ?? {
 diff --git a/dist/source/context.jsx b/dist/source/context.jsx
-index e4b9cff72dce47749964ae245a94135c9b69346e..7bb8f8ffc5a8746afe7d1bca9de1c03459a9bcff 100644
+index 7987ae0c2b5cdbe9b6a54c44f54c2685a0054725..3be4c555148baa1bd1ccb5569d886f03fb661c33 100644
 --- a/dist/source/context.jsx
 +++ b/dist/source/context.jsx
 @@ -6,7 +6,7 @@
@@ -65,11 +65,11 @@ index e4b9cff72dce47749964ae245a94135c9b69346e..7bb8f8ffc5a8746afe7d1bca9de1c034
  export {
    LucideContext,
 diff --git a/package.json b/package.json
-index 4a85a4ccd215843a06c9e9f78e26dd2ccfe38c29..5d5ece043dd57ddc09a41a1d857c03d1315813fa 100644
+index 590bc670d92724cd47891ea9a58473c6e896adbe..ace1cb3df7dc1d9165ea313a964e9338f6d890e4 100644
 --- a/package.json
 +++ b/package.json
 @@ -75,7 +75,8 @@
-     "@lucide/build-icons": "1.1.0"
+     "@lucide/shared": "1.0.0"
    },
    "peerDependencies": {
 -    "solid-js": "^1.4.7"

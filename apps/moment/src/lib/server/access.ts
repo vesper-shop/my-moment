@@ -2,6 +2,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { getSession } from "void/auth";
 import type { WorkerBindings } from "~/types";
 import { verifyApiKey } from "./apikey";
+import { verifyOwnerToken } from "./oauth";
 
 export interface WorkerVariables {
   ownerId: string;
@@ -25,8 +26,13 @@ export function createOwnerGuard(
     const allowedEmail = c.env.ALLOWED_EMAIL;
     if (!allowedEmail) return c.json({ error: notConfiguredMessage }, 500);
 
-    if (c.req.header("authorization") !== undefined) {
-      if (!(await verifyApiKey(c.req.raw, c.env.API_KEY))) {
+    const authorization = c.req.header("authorization");
+    if (authorization !== undefined) {
+      const verified =
+        authorization.split(".").length === 3
+          ? await verifyOwnerToken(c.req.raw, allowedEmail)
+          : await verifyApiKey(c.req.raw, c.env.API_KEY);
+      if (!verified) {
         c.header("WWW-Authenticate", "Bearer");
         return c.json({ error: "Unauthorized" }, 401);
       }

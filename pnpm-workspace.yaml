@@ -27,4 +27,4 @@ minimumReleaseAgeExclude:
   - vite-plus@1.4.0
 
 patchedDependencies:
-  lucide-solid@1.61.0: patches/lucide-solid@1.61.0.patch
+  lucide-solid@1.66.0: patches/lucide-solid@1.66.0.patch
