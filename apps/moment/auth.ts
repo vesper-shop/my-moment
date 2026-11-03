@@ -1,14 +1,9 @@
 import { customSession, genericOAuth } from "better-auth/plugins";
 import { defineAuth } from "void/auth";
-import type { ValidatedEnv } from "void/env";
 import { HOST_DISPLAY_NAME } from "./src/lib/identity.ts";
 import { GATEWAY_OWNER_SUBJECT, GATEWAY_PROVIDER_ID } from "./src/lib/server/owner.ts";
 
-type AuthEnv = Pick<ValidatedEnv, "YOU_FIND_ME_CLIENT_SECRET">;
-
-export default defineAuth(({ defaults, env: authEnv, request }) => {
-  const { YOU_FIND_ME_CLIENT_SECRET } = authEnv as AuthEnv;
-
+export default defineAuth(({ defaults, request }) => {
   return {
     ...defaults,
     trustedOrigins: [new URL(request.url).origin],
@@ -39,9 +34,8 @@ export default defineAuth(({ defaults, env: authEnv, request }) => {
             name: "you-find.me",
             discoveryUrl: "https://you-find.me/api/auth/.well-known/openid-configuration",
             clientId: "moment",
-            clientSecret: YOU_FIND_ME_CLIENT_SECRET,
             scopes: ["openid", "profile", "email"],
-            tokenEndpointAuth: { method: "client_secret_basic" },
+            tokenEndpointAuth: { method: "none" },
             pkce: true,
           },
         ],
