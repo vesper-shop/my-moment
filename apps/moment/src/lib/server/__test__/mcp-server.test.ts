@@ -9,7 +9,6 @@ describe("MCP photo tools", () => {
       DB: {} as D1Database,
       MOMENT_BUCKET: {} as R2Bucket,
       MOMENT_CACHE: {} as KVNamespace,
-      API_KEY: { getByName: () => ({ fetch: async () => new Response() }) },
       ASSETS: {} as Fetcher,
     };
     const handler = createMomentMcpHandler(env, "owner-1");

@@ -1,6 +1,6 @@
 import { createEffect, createSignal, onSettled, Show } from "solid-js";
 import { createRootRoute, HeadContent, Link, Outlet, useRouter } from "@tanstack/solid-router";
-import { useOwner, useSession, signIn, signOut } from "~/lib/services/auth";
+import { useSession, signIn, signOut } from "~/lib/services/auth";
 import {
   Images,
   Map,
@@ -12,28 +12,17 @@ import {
   Moon,
   LogIn,
   LogOut,
-  Shield,
-  RefreshCw,
-  Copy,
 } from "lucide-solid";
 import {
   Avatar,
   Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   Popover,
   PopoverTrigger,
   PopoverContent,
   Toaster,
   applyTheme,
-  toast,
 } from "@my-moment/ui";
 import { GallerySettingsProvider } from "~/providers/gallery-settings-provider";
-import { apiGenerateApiKey, apiGetApiKeyStatus } from "~/lib/services/api-key";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -62,17 +51,10 @@ const SECONDARY_LINKS = [
 
 function RootLayout() {
   const session = useSession();
-  const owner = useOwner();
   const router = useRouter();
 
   const [isDark, setIsDark] = createSignal(false);
   const [themeBtnEl, setThemeBtnEl] = createSignal<HTMLButtonElement | null>(null);
-  const [apiKeyConfigured, setApiKeyConfigured] = createSignal(false);
-  const [apiKeyLoading, setApiKeyLoading] = createSignal(true);
-  const [apiKeyDialogOpen, setApiKeyDialogOpen] = createSignal(false);
-  const [apiKeyConfirmOpen, setApiKeyConfirmOpen] = createSignal(false);
-  const [generatedApiKey, setGeneratedApiKey] = createSignal("");
-  const [apiKeyCopied, setApiKeyCopied] = createSignal(false);
 
   onSettled(() => {
     const saved = localStorage.getItem(THEME_KEY);
@@ -142,19 +124,6 @@ function RootLayout() {
 
   const user = () => session()?.data?.user ?? null;
 
-  createEffect(owner, (isOwner) => {
-    if (!isOwner) {
-      setApiKeyConfigured(false);
-      return;
-    }
-    apiGetApiKeyStatus()
-      .then((status) => {
-        setApiKeyConfigured(status.configured);
-      })
-      .catch(() => toast.error("Could not load API key status"))
-      .finally(() => setApiKeyLoading(false));
-  });
-
   const handleSignOut = async () => {
     await signOut();
     window.location.href = "/";
@@ -163,59 +132,6 @@ function RootLayout() {
   const handleSignIn = () => {
     signIn.social({ provider: "you-find-me", callbackURL: currentPath() });
   };
-
-  const requestApiKeyGeneration = () => {
-    if (apiKeyConfigured()) {
-      setApiKeyConfirmOpen(true);
-      return;
-    }
-    generateApiKey("POST");
-  };
-
-  const generateApiKey = (method: "POST" | "PUT") => {
-    if (apiKeyLoading()) return;
-    setApiKeyLoading(true);
-    apiGenerateApiKey(method)
-      .then((result) => {
-        setGeneratedApiKey(result.apiKey);
-        setApiKeyConfigured(true);
-        setApiKeyCopied(false);
-        setApiKeyConfirmOpen(false);
-        setApiKeyDialogOpen(true);
-      })
-      .catch(() => toast.error("Could not generate API key"))
-      .finally(() => setApiKeyLoading(false));
-  };
-
-  const handleCopyApiKey = () => {
-    navigator.clipboard
-      .writeText(generatedApiKey())
-      .then(() => {
-        setApiKeyCopied(true);
-        toast.success("API key copied");
-      })
-      .catch(() => toast.error("Could not copy API key"));
-  };
-
-  const ApiKeyButton = () => (
-    <Show when={owner()}>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="h-8 w-8 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-        disabled={apiKeyLoading()}
-        onClick={requestApiKeyGeneration}
-        aria-label={apiKeyConfigured() ? "Regenerate API key" : "Generate API key"}
-        title={apiKeyConfigured() ? "Regenerate API key" : "Generate API key"}
-      >
-        <Show when={apiKeyConfigured()} fallback={<Shield size={15} />}>
-          <span class={apiKeyLoading() ? "animate-spin" : undefined}>
-            <RefreshCw size={15} />
-          </span>
-        </Show>
-      </Button>
-    </Show>
-  );
 
   const AuthDropdown = () => (
     <Popover placement="bottom-end">
@@ -295,7 +211,6 @@ function RootLayout() {
           <span class="font-serif font-semibold text-foreground tracking-tight">my moment</span>
         </div>
         <div class="flex items-center gap-1">
-          <ApiKeyButton />
           <Button
             variant="ghost"
             size="icon"
@@ -381,7 +296,6 @@ function RootLayout() {
             </nav>
 
             <div class="flex items-center gap-2 shrink-0">
-              <ApiKeyButton />
               <Button
                 variant="ghost"
                 size="icon"
@@ -451,57 +365,6 @@ function RootLayout() {
 
         <Toaster />
       </div>
-
-      <Dialog open={apiKeyConfirmOpen()} onOpenChange={setApiKeyConfirmOpen}>
-        <DialogContent aria-label="Confirm API key regeneration">
-          <DialogHeader>
-            <DialogTitle>Regenerate API key?</DialogTitle>
-            <DialogDescription>
-              The current my-moment key will be replaced immediately.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter class="gap-2">
-            <Button variant="outline" onClick={() => setApiKeyConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => generateApiKey("PUT")} disabled={apiKeyLoading()}>
-              Regenerate
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={apiKeyDialogOpen()}
-        onOpenChange={(open) => {
-          setApiKeyDialogOpen(open);
-          if (!open) {
-            setGeneratedApiKey("");
-            setApiKeyCopied(false);
-          }
-        }}
-      >
-        <DialogContent aria-label="API key">
-          <DialogHeader>
-            <DialogTitle>API key generated</DialogTitle>
-            <DialogDescription>
-              Copy this key now. Generating a new key immediately revokes the previous one, and the
-              plaintext cannot be viewed again.
-            </DialogDescription>
-          </DialogHeader>
-          <div class="flex items-center gap-2 rounded-md border border-border bg-muted p-2">
-            <code class="min-w-0 flex-1 break-all px-1 font-mono text-xs text-foreground">
-              {generatedApiKey()}
-            </code>
-            <Button variant="outline" size="sm" class="shrink-0 gap-1.5" onClick={handleCopyApiKey}>
-              <Copy size={13} /> {apiKeyCopied() ? "Copied" : "Copy"}
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setApiKeyDialogOpen(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

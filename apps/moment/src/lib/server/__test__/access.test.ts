@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { WorkerBindings } from "~/types";
@@ -43,34 +42,15 @@ describe("createOwnerGuard", () => {
     await expect(response.json()).resolves.toEqual({ error: "Forbidden" });
   });
 
-  it("accepts the API key in place of a session", async () => {
-    const apiKey = "sk-moment-test";
-    const digest = createHash("sha256").update(apiKey).digest("hex");
-    const keyEnv = {
-      ...env,
-      API_KEY: {
-        getByName: () => ({
-          fetch: async () =>
-            Response.json({ version: 1, digest, createdAt: "2026-08-23T00:00:00.000Z" }),
-        }),
-      },
-    } as unknown as WorkerBindings;
-
-    const accepted = await createApp().request(
+  it("rejects a bearer token the gateway did not issue without reading the session", async () => {
+    const response = await createApp().request(
       "/private",
-      { headers: { authorization: `Bearer ${apiKey}` } },
-      keyEnv,
+      { headers: { authorization: "Bearer not-a-jwt" } },
+      env,
     );
-    expect(accepted.status).toBe(200);
-    await expect(accepted.json()).resolves.toEqual({ ownerId: "owner-id" });
 
-    const rejected = await createApp().request(
-      "/private",
-      { headers: { authorization: "Bearer sk-wrong" } },
-      keyEnv,
-    );
-    expect(rejected.status).toBe(401);
-    expect(rejected.headers.get("WWW-Authenticate")).toBe("Bearer");
+    expect(response.status).toBe(401);
+    expect(response.headers.get("WWW-Authenticate")).toBe("Bearer");
     expect(getSession).not.toHaveBeenCalled();
   });
 

@@ -3,7 +3,7 @@
   "info": {
     "title": "My Moment API",
     "version": "1.0.0",
-    "description": "Read and manage photos and tags. Reads are public; writes require the generated API key or the owner session."
+    "description": "Read and manage photos and tags. Reads are public; writes require a you-find.me access token with the moment:write scope or the owner session."
   },
   "servers": [
     {
@@ -437,7 +437,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -819,7 +819,7 @@
             }
           },
           "401": {
-            "description": "Missing or invalid API key.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {
@@ -867,7 +867,7 @@
             "description": "Deleted."
           },
           "401": {
-            "description": "Missing or invalid API key.",
+            "description": "Missing or invalid access token.",
             "content": {
               "application/json": {
                 "schema": {

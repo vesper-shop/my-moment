@@ -17,16 +17,17 @@ Vite+ · Void · SolidJS · TypeScript · TailwindCSS v4 · Hono · TanStack Rou
 ## API
 
 One REST surface under `/api`, described by
-[`/api/openapi.json`](https://moment.you-find.me/api/openapi.json). Reads need no key; writes take
-the owner session or the API key generated from the site header.
+[`/api/openapi.json`](https://moment.you-find.me/api/openapi.json). Reads need no token; writes take
+the owner session or an access token issued by the you-find.me gateway (`moment:write` scope).
 
 ```sh
 curl https://moment.you-find.me/api/photos?search=edinburgh
-curl -X PATCH -H "Authorization: Bearer $MOMENT_API_KEY" -H "Content-Type: application/json" \
+curl -X PATCH -H "Authorization: Bearer $MOMENT_ACCESS_TOKEN" -H "Content-Type: application/json" \
   -d '{"tags":["travel"]}' https://moment.you-find.me/api/photos/<id>
 ```
 
-The MCP endpoint at `/api/mcp` takes the same key: `list_photos`, `search_photos`, `get_photo`,
+The MCP endpoint at `/api/mcp` takes the same token; clients discover the gateway from
+`/.well-known/oauth-protected-resource`, register and sign the owner in: `list_photos`, `search_photos`, `get_photo`,
 `create_photo`, `update_photo`, `delete_photo`, `list_tags`. `/llms.txt` and
 `/.well-known/api-catalog` list these entry points.
 

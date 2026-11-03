@@ -43,15 +43,6 @@ export default defineConfig({
         bucket_name: "cherry-studio",
       },
     ],
-    durable_objects: {
-      bindings: [
-        {
-          name: "API_KEY",
-          class_name: "ApiKeyDurableObject",
-          script_name: "my-knowledge",
-        },
-      ],
-    },
     observability: {
       logs: {
         enabled: true,

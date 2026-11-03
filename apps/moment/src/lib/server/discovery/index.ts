@@ -162,7 +162,7 @@ export function llmsTxt(photos: readonly PhotoItem[], origin: string): string {
     "",
     "## API",
     "",
-    `- [REST API](${new URL("/api/openapi.json", origin).href}): ${new URL("/api", origin).href} for photos (list, search, read, write) and tags. Reads need no key; writes require \`Authorization: Bearer <API key>\` or the owner session.`,
+    `- [REST API](${new URL("/api/openapi.json", origin).href}): ${new URL("/api", origin).href} for photos (list, search, read, write) and tags. Reads need no token; writes require \`Authorization: Bearer <access token>\` issued by you-find.me or the owner session.`,
     `- [MCP](${new URL("/api/mcp", origin).href}): Stateless MCP endpoint with the same Bearer key.`,
     `- [Anime](${new URL("/api/media?kind=anime", origin).href}): Watched anime with notes and dates, no key required; films at ${new URL("/api/media?kind=film", origin).href}.`,
     `- [Haul](${new URL("/api/haul", origin).href}): Purchases with brand, price, rating and comments, no key required.`,

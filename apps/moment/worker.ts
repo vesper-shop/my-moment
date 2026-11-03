@@ -63,7 +63,8 @@ import type { MessageCursor, WorkerBindings } from "~/types";
 import { PUBLIC_PAGE_META, SITE_NAME, SITE_ORIGIN, type PublicPageKey } from "~/lib/seo";
 import { MAPBOX_TOKEN } from "~/lib/map";
 import { DEFAULT_GROUPS, groups } from "~/modules/journey/groups";
-import { generateApiKey, getApiKeyStatus, verifyApiKey } from "~/lib/server/apikey";
+import { createMcpProtectedRequestHandler } from "@better-auth/mcp";
+import { PROTECTED_RESOURCE_METADATA, RESOURCE_SERVER } from "~/lib/server/oauth";
 import { createMomentMcpHandler } from "~/lib/server/mcp";
 import {
   API_LINK_HEADER,
@@ -293,32 +294,21 @@ app.get("/api/owner", async (c) => {
   return c.json({ owner: await requestIsOwner(c) });
 });
 
-app.get("/api/settings/api-key", ownerOnly, async (c) => {
-  c.header("Cache-Control", "no-store");
-  return c.json(await getApiKeyStatus(c.env.API_KEY));
-});
-
-app.post("/api/settings/api-key", ownerOnly, async (c) => {
-  c.header("Cache-Control", "no-store");
-  return c.json(await generateApiKey(c.env.API_KEY));
-});
-
-app.put("/api/settings/api-key", ownerOnly, async (c) => {
-  c.header("Cache-Control", "no-store");
-  return c.json(await generateApiKey(c.env.API_KEY));
+app.get("/.well-known/oauth-protected-resource", (c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.json(PROTECTED_RESOURCE_METADATA);
 });
 
 app.post("/api/mcp", async (c) => {
   if (c.req.header("mcp-session-id")) {
     return c.json({ error: "MCP sessions are not supported." }, 400);
   }
-  if (!(await verifyApiKey(c.req.raw, c.env.API_KEY))) {
-    c.header("WWW-Authenticate", "Bearer");
-    return c.json({ error: "Unauthorized." }, 401);
-  }
-  const ownerId = await findOwnerId(c.env.DB);
-  if (!ownerId) return c.json({ error: "Owner account not found." }, 503);
-  return createMomentMcpHandler(c.env, ownerId).fetch(c.req.raw);
+  return createMcpProtectedRequestHandler(RESOURCE_SERVER, async (request) => {
+    const ownerId = await findOwnerId(c.env.DB);
+    if (!ownerId) return Response.json({ error: "Owner account not found." }, { status: 503 });
+    return createMomentMcpHandler(c.env, ownerId).fetch(request);
+  })(c.req.raw);
 });
 
 app.get("/api/messages", async (c) => {
