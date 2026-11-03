@@ -15,11 +15,10 @@ import { HOST_DISPLAY_NAME } from "~/lib/identity";
 function toMessage(
   row: MessageRecord,
   viewerId: string | null,
-  viewerEmail: string | null,
-  hostEmail: string | undefined,
+  hostId: string | null,
 ): GuestbookMessage {
-  const viewerIsHost = Boolean(hostEmail && viewerEmail === hostEmail);
-  const authorIsHost = Boolean(hostEmail && row.authorEmail === hostEmail);
+  const viewerIsHost = viewerId !== null && viewerId === hostId;
+  const authorIsHost = row.authorId === hostId;
   return {
     id: row.id,
     parentId: row.parentId,
@@ -39,15 +38,14 @@ function toMessage(
 const SELECT_MESSAGE = `
   SELECT m.id, m."authorId" AS authorId, m."parentId" AS parentId,
          m.content, m."createdAt" AS createdAt,
-         u.name AS authorName, u.image AS authorImage, u.email AS authorEmail
+         u.name AS authorName, u.image AS authorImage
   FROM guestbook_messages m
   JOIN "user" u ON u.id = m."authorId"`;
 
 export async function listMessages(
   db: D1Database,
   viewerId: string | null,
-  viewerEmail: string | null,
-  hostEmail: string | undefined,
+  hostId: string | null,
   cursor: MessageCursor | null,
   limit: number,
 ): Promise<MessagesResponse> {
@@ -84,12 +82,12 @@ export async function listMessages(
   for (const row of replyRows) {
     if (!row.parentId) continue;
     const list = replies.get(row.parentId) ?? [];
-    list.push(toMessage(row, viewerId, viewerEmail, hostEmail));
+    list.push(toMessage(row, viewerId, hostId));
     replies.set(row.parentId, list);
   }
 
   const messages = topRows.map((row) => ({
-    ...toMessage(row, viewerId, viewerEmail, hostEmail),
+    ...toMessage(row, viewerId, hostId),
     replies: replies.get(row.id) ?? [],
   }));
   const last = topRows.at(-1);
@@ -109,20 +107,18 @@ export async function getMessage(
   db: D1Database,
   id: string,
   viewerId: string | null,
-  viewerEmail: string | null,
-  hostEmail: string | undefined,
+  hostId: string | null,
 ): Promise<GuestbookMessage | null> {
   const row = await db.prepare(`${SELECT_MESSAGE} WHERE m.id = ?`).bind(id).first<MessageRecord>();
-  return row ? toMessage(row, viewerId, viewerEmail, hostEmail) : null;
+  return row ? toMessage(row, viewerId, hostId) : null;
 }
 
 export async function createMessage(
   db: D1Database,
   authorId: string,
-  authorEmail: string,
   parentId: string | null,
   content: string,
-  hostEmail: string | undefined,
+  hostId: string | null,
 ): Promise<CreateMessageResult> {
   const latest = await db
     .prepare(
@@ -161,7 +157,7 @@ export async function createMessage(
     )
     .bind(id, authorId, parentId, content, createdAt)
     .run();
-  const message = await getMessage(db, id, authorId, authorEmail, hostEmail);
+  const message = await getMessage(db, id, authorId, hostId);
   if (!message) throw new Error("Created message could not be read");
   return { ok: true, message };
 }
@@ -170,9 +166,8 @@ export async function updateMessage(
   db: D1Database,
   id: string,
   authorId: string,
-  authorEmail: string,
   content: string,
-  hostEmail: string | undefined,
+  hostId: string | null,
 ): Promise<GuestbookMessage | null> {
   const result = await db
     .prepare(
@@ -183,7 +178,7 @@ export async function updateMessage(
     .bind(content, id, authorId)
     .run();
   if (result.meta.changes === 0) return null;
-  return getMessage(db, id, authorId, authorEmail, hostEmail);
+  return getMessage(db, id, authorId, hostId);
 }
 
 export async function deleteMessage(db: D1Database, id: string): Promise<boolean> {

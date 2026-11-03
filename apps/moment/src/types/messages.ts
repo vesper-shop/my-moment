@@ -91,7 +91,6 @@ export interface MessageRecord {
   createdAt: string;
   authorName: string;
   authorImage: string | null;
-  authorEmail: string;
 }
 
 export interface MessageTimestampRecord {

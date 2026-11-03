@@ -12,7 +12,7 @@ describe("MCP photo tools", () => {
       API_KEY: { getByName: () => ({ fetch: async () => new Response() }) },
       ASSETS: {} as Fetcher,
     };
-    const handler = createMomentMcpHandler(env);
+    const handler = createMomentMcpHandler(env, "owner-1");
     const response = await handler.fetch(
       new Request("https://mcp.test/api/mcp", {
         method: "POST",

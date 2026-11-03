@@ -19,7 +19,7 @@ import { MAX_FILTER_TAGS, dateSchema, photoCreateSchema, searchSchema } from "..
 
 const SEARCH_LIMIT = 10;
 
-export function createMomentMcpHandler(env: WorkerBindings): McpHttpHandler {
+export function createMomentMcpHandler(env: WorkerBindings, ownerId: string): McpHttpHandler {
   return createMcpHandler(
     () => {
       const server = new McpServer(
@@ -140,7 +140,7 @@ export function createMomentMcpHandler(env: WorkerBindings): McpHttpHandler {
         },
         async (input): Promise<CallToolResult> => {
           const value = {
-            photo: await createPhotoFromR2(env.DB, env.MOMENT_BUCKET, env.ALLOWED_EMAIL, input),
+            photo: await createPhotoFromR2(env.DB, env.MOMENT_BUCKET, ownerId, input),
           };
           return {
             content: [{ type: "text", text: JSON.stringify(value) }],

@@ -7,7 +7,6 @@ export interface WorkerBindings {
   MOMENT_BUCKET: R2Bucket;
   MOMENT_CACHE: KVNamespace;
   API_KEY: ApiKeyBinding;
-  ALLOWED_EMAIL?: string;
   SPOTIFY_PLAYLIST_ID?: string;
   ASSETS: Fetcher;
 }

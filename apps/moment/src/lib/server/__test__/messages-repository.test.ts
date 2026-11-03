@@ -10,7 +10,7 @@ describe("updateMessage", () => {
     const database = { prepare } as unknown as D1Database;
 
     await expect(
-      updateMessage(database, "message-1", "author-1", "author@example.com", "Updated", undefined),
+      updateMessage(database, "message-1", "author-1", "Updated", "owner-id"),
     ).resolves.toBeNull();
 
     expect(bind).toHaveBeenCalledWith("Updated", "message-1", "author-1");
@@ -29,7 +29,6 @@ describe("updateMessage", () => {
       createdAt: "2026-08-03T00:00:00.000Z",
       authorName: "Author",
       authorImage: null,
-      authorEmail: "author@example.com",
     };
     const selectFirst = vi.fn().mockResolvedValue(row);
     const selectBind = vi.fn().mockReturnValue({ first: selectFirst });
@@ -40,7 +39,7 @@ describe("updateMessage", () => {
     const database = { prepare } as unknown as D1Database;
 
     await expect(
-      updateMessage(database, "message-1", "author-1", row.authorEmail, "Updated", undefined),
+      updateMessage(database, "message-1", "author-1", "Updated", "owner-id"),
     ).resolves.toEqual({
       id: "message-1",
       parentId: null,

@@ -7,7 +7,9 @@ vi.mock("void/auth", () => ({ getSession }));
 
 import app from "../../../../worker";
 
-const env = { ALLOWED_EMAIL: "owner@example.com" } as WorkerBindings;
+const env = {
+  DB: { prepare: () => ({ bind: () => ({ first: async () => ({ userId: "owner-id" }) }) }) },
+} as unknown as WorkerBindings;
 const writes = app.routes.filter(
   (route, index, routes) =>
     ["POST", "PUT", "PATCH", "DELETE"].includes(route.method) &&
@@ -33,7 +35,7 @@ describe("write routes", () => {
   it.each(writes.filter((route) => !guestWrites.includes(route.path)))(
     "$method $path rejects signed-in guests",
     async (route) => {
-      getSession.mockReturnValue({ user: { id: "guest-id", email: "guest@example.com" } });
+      getSession.mockReturnValue({ user: { id: "guest-id" } });
 
       const response = await app.request(route.path, { method: route.method }, env);
 
@@ -49,8 +51,8 @@ describe("GET /api/owner", () => {
 
   it.each([
     { name: "anonymous requests", session: null, owner: false },
-    { name: "signed-in guests", session: { user: { email: "guest@example.com" } }, owner: false },
-    { name: "the owner", session: { user: { email: "owner@example.com" } }, owner: true },
+    { name: "signed-in guests", session: { user: { id: "guest-id" } }, owner: false },
+    { name: "the owner", session: { user: { id: "owner-id" } }, owner: true },
   ])("reports $owner for $name", async ({ session, owner }) => {
     getSession.mockReturnValue(session);
 

@@ -2,11 +2,12 @@ import { customSession, genericOAuth } from "better-auth/plugins";
 import { defineAuth } from "void/auth";
 import type { ValidatedEnv } from "void/env";
 import { HOST_DISPLAY_NAME } from "./src/lib/identity.ts";
+import { GATEWAY_OWNER_SUBJECT, GATEWAY_PROVIDER_ID } from "./src/lib/server/owner.ts";
 
-type AuthEnv = Pick<ValidatedEnv, "YOU_FIND_ME_CLIENT_SECRET" | "ALLOWED_EMAIL">;
+type AuthEnv = Pick<ValidatedEnv, "YOU_FIND_ME_CLIENT_SECRET">;
 
 export default defineAuth(({ defaults, env: authEnv, request }) => {
-  const { YOU_FIND_ME_CLIENT_SECRET, ALLOWED_EMAIL } = authEnv as AuthEnv;
+  const { YOU_FIND_ME_CLIENT_SECRET } = authEnv as AuthEnv;
 
   return {
     ...defaults,
@@ -21,7 +22,7 @@ export default defineAuth(({ defaults, env: authEnv, request }) => {
     },
     account: {
       ...defaults.account,
-      accountLinking: { trustedProviders: ["you-find-me"] },
+      accountLinking: { enabled: false },
     },
     session: {
       ...defaults.session,
@@ -34,7 +35,7 @@ export default defineAuth(({ defaults, env: authEnv, request }) => {
       genericOAuth({
         config: [
           {
-            providerId: "you-find-me",
+            providerId: GATEWAY_PROVIDER_ID,
             name: "you-find.me",
             discoveryUrl: "https://you-find.me/api/auth/.well-known/openid-configuration",
             clientId: "moment",
@@ -45,13 +46,15 @@ export default defineAuth(({ defaults, env: authEnv, request }) => {
           },
         ],
       }),
-      customSession(async ({ user, session }) => ({
-        user:
-          ALLOWED_EMAIL && user.email === ALLOWED_EMAIL
-            ? { ...user, name: HOST_DISPLAY_NAME }
-            : user,
-        session,
-      })),
+      customSession(async ({ user, session }, ctx) => {
+        const accounts = await ctx.context.internalAdapter.findAccounts(user.id);
+        const isHost = accounts.some(
+          (account) =>
+            account.providerId === GATEWAY_PROVIDER_ID &&
+            account.accountId === GATEWAY_OWNER_SUBJECT,
+        );
+        return { user: isHost ? { ...user, name: HOST_DISPLAY_NAME } : user, session };
+      }),
     ],
   };
 });

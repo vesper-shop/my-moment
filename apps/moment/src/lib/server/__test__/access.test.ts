@@ -9,32 +9,20 @@ vi.mock("void/auth", () => ({ getSession }));
 
 import { createOwnerGuard, type WorkerEnv } from "../access";
 
-const ownerEmail = "owner@example.com";
-const env = { ALLOWED_EMAIL: ownerEmail } as WorkerBindings;
+const ownerDatabase = {
+  prepare: () => ({ bind: () => ({ first: async () => ({ userId: "owner-id" }) }) }),
+};
+const env = { DB: ownerDatabase } as unknown as WorkerBindings;
 
-function createApp(notConfiguredMessage?: string) {
+function createApp() {
   const app = new Hono<WorkerEnv>();
-  app.get("/private", createOwnerGuard(notConfiguredMessage), (c) =>
-    c.json({ ownerId: c.get("ownerId") }),
-  );
+  app.get("/private", createOwnerGuard(), (c) => c.json({ ownerId: c.get("ownerId") }));
   return app;
 }
 
 describe("createOwnerGuard", () => {
   beforeEach(() => {
     getSession.mockReset();
-  });
-
-  it("returns 500 when owner access is not configured", async () => {
-    const response = await createApp("Upload not configured").request(
-      "/private",
-      undefined,
-      {} as WorkerBindings,
-    );
-
-    expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toEqual({ error: "Upload not configured" });
-    expect(getSession).not.toHaveBeenCalled();
   });
 
   it("returns 401 when there is no signed-in user", async () => {
@@ -47,7 +35,7 @@ describe("createOwnerGuard", () => {
   });
 
   it("returns 403 when the signed-in user is not the owner", async () => {
-    getSession.mockReturnValue({ user: { id: "guest-id", email: "guest@example.com" } });
+    getSession.mockReturnValue({ user: { id: "guest-id" } });
 
     const response = await createApp().request("/private", undefined, env);
 
@@ -65,9 +53,6 @@ describe("createOwnerGuard", () => {
           fetch: async () =>
             Response.json({ version: 1, digest, createdAt: "2026-08-23T00:00:00.000Z" }),
         }),
-      },
-      DB: {
-        prepare: () => ({ bind: () => ({ first: async () => ({ id: "owner-id" }) }) }),
       },
     } as unknown as WorkerBindings;
 
@@ -90,7 +75,7 @@ describe("createOwnerGuard", () => {
   });
 
   it("passes the owner id to protected handlers", async () => {
-    getSession.mockReturnValue({ user: { id: "owner-id", email: ownerEmail } });
+    getSession.mockReturnValue({ user: { id: "owner-id" } });
 
     const response = await createApp().request("/private", undefined, env);
 

@@ -1,5 +1,5 @@
 import { photoUploadSchema } from "~/types/photo";
-import type { PhotoItem, WorkerBindings } from "~/types";
+import type { PhotoItem } from "~/types";
 import type { CreatePhotoFromR2Input } from "./types";
 import { PhotoDomainError } from "./errors";
 import { deletePhotoObjects, storePhotoObjects } from "./storage";
@@ -103,19 +103,9 @@ export async function createPhotoFromUpload(
 export async function createPhotoFromR2(
   d1: D1Database,
   bucket: R2Bucket,
-  allowedEmail: WorkerBindings["ALLOWED_EMAIL"],
+  ownerId: string,
   input: CreatePhotoFromR2Input,
 ): Promise<PhotoItem> {
-  if (!allowedEmail) {
-    throw new PhotoDomainError("OWNER_NOT_CONFIGURED", "Owner access is not configured.", 503);
-  }
-
-  const owner = await d1
-    .prepare(`SELECT id FROM user WHERE email = ? LIMIT 1`)
-    .bind(allowedEmail)
-    .first<{ id: string }>();
-  if (!owner) throw new PhotoDomainError("OWNER_NOT_FOUND", "Owner account not found.", 503);
-
   const [original, thumbnail] = await Promise.all([
     bucket.head(input.r2Key),
     bucket.head(input.thumbnailR2Key),
@@ -141,7 +131,7 @@ export async function createPhotoFromR2(
     );
   }
 
-  return createPhoto(d1, owner.id, {
+  return createPhoto(d1, ownerId, {
     title: input.title,
     description: input.description,
     tags: input.tags,

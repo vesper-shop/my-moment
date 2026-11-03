@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { getSession } from "void/auth";
 import { createOwnerGuard, requestIsOwner, type WorkerEnv } from "~/lib/server/access";
+import { findOwnerId } from "~/lib/server/owner";
 import {
   countPhotos,
   createPhotoFromR2,
@@ -91,7 +92,7 @@ app.onError((error, c) => {
   throw error;
 });
 const ownerOnly = createOwnerGuard();
-const uploadOwnerOnly = createOwnerGuard("Upload not configured");
+const uploadOwnerOnly = createOwnerGuard();
 
 const messageCreateSchema = z.object({
   content: z.string().trim().min(1).max(1000),
@@ -315,7 +316,9 @@ app.post("/api/mcp", async (c) => {
     c.header("WWW-Authenticate", "Bearer");
     return c.json({ error: "Unauthorized." }, 401);
   }
-  return createMomentMcpHandler(c.env).fetch(c.req.raw);
+  const ownerId = await findOwnerId(c.env.DB);
+  if (!ownerId) return c.json({ error: "Owner account not found." }, 503);
+  return createMomentMcpHandler(c.env, ownerId).fetch(c.req.raw);
 });
 
 app.get("/api/messages", async (c) => {
@@ -325,8 +328,7 @@ app.get("/api/messages", async (c) => {
   const result = await listMessages(
     c.env.DB,
     session?.user?.id ?? null,
-    session?.user?.email ?? null,
-    c.env.ALLOWED_EMAIL,
+    await findOwnerId(c.env.DB),
     query.data.cursor ?? null,
     query.data.limit,
   );
@@ -344,10 +346,9 @@ app.post("/api/messages", async (c) => {
   const result = await createMessage(
     c.env.DB,
     session.user.id,
-    session.user.email,
     parsed.data.parentId ?? null,
     parsed.data.content,
-    c.env.ALLOWED_EMAIL,
+    await findOwnerId(c.env.DB),
   );
   if (!result.ok) {
     if (result.reason === "rate_limited") {
@@ -380,9 +381,8 @@ app.patch("/api/messages/:id", async (c) => {
     c.env.DB,
     c.req.param("id"),
     session.user.id,
-    session.user.email,
     parsed.data.content,
-    c.env.ALLOWED_EMAIL,
+    await findOwnerId(c.env.DB),
   );
   if (!message) return c.json({ ok: false, error: "Message not found" }, 404);
   return c.json({ ok: true, message });
@@ -393,7 +393,7 @@ app.delete("/api/messages/:id", async (c) => {
   if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
   const owner = await getMessageOwner(c.env.DB, c.req.param("id"));
   if (!owner) return c.json({ error: "Message not found" }, 404);
-  const isHost = Boolean(c.env.ALLOWED_EMAIL && session.user.email === c.env.ALLOWED_EMAIL);
+  const isHost = session.user.id === (await findOwnerId(c.env.DB));
   if (owner.authorId !== session.user.id && !isHost) return c.json({ error: "Forbidden" }, 403);
   await deleteMessage(c.env.DB, c.req.param("id"));
   return c.json({ ok: true, deletedReplies: owner.isTopLevel });
@@ -432,7 +432,7 @@ app.post("/api/photos", ownerOnly, async (c) => {
   const photo = await createPhotoFromR2(
     c.env.DB,
     c.env.MOMENT_BUCKET,
-    c.env.ALLOWED_EMAIL,
+    c.get("ownerId"),
     input.data,
   );
   return c.json({ photo }, 201);

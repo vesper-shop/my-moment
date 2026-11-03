@@ -36,7 +36,7 @@ describe("createPhotoFromR2", () => {
     vi.mocked(isObjectInUse).mockResolvedValue(true);
     const { d1, bucket } = bindings();
 
-    await expect(createPhotoFromR2(d1, bucket, "owner@example.com", input)).rejects.toMatchObject({
+    await expect(createPhotoFromR2(d1, bucket, "owner-1", input)).rejects.toMatchObject({
       code: "R2_OBJECT_IN_USE",
       httpStatus: 409,
     });
