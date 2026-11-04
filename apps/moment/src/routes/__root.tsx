@@ -176,7 +176,10 @@ function RootLayout() {
           {(u) => (
             <div class="flex flex-col items-center gap-3 py-4 px-4">
               <Avatar src={u().image ?? undefined} fallback={u().name ?? "?"} size="lg" />
-              <p class="text-center text-sm font-medium">{u().name}</p>
+              <div class="text-center">
+                <p class="text-sm font-medium">{u().name}</p>
+                <p class="text-xs text-muted-foreground truncate max-w-44">{u().email}</p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -188,14 +191,6 @@ function RootLayout() {
             </div>
           )}
         </Show>
-        <a
-          href="https://github.com/Pleasurecruise/my-moment"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="block border-t border-border px-4 py-2.5 text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Source code
-        </a>
       </PopoverContent>
     </Popover>
   );
