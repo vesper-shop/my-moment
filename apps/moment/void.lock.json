@@ -18,19 +18,22 @@
         "binding": "DB",
         "database_name": "my-moment",
         "database_id": "c97bada7-4af1-44c7-85e3-16992959c181",
-        "migrations_dir": "./db/migrations"
+        "migrations_dir": "./db/migrations",
+        "remote": true
       }
     ],
     "kv_namespaces": [
       {
         "binding": "MOMENT_CACHE",
-        "id": "50250d1bc6a04bc797cf15cfafdbec07"
+        "id": "50250d1bc6a04bc797cf15cfafdbec07",
+        "remote": true
       }
     ],
     "r2_buckets": [
       {
         "binding": "MOMENT_BUCKET",
-        "bucket_name": "cherry-studio"
+        "bucket_name": "cherry-studio",
+        "remote": true
       }
     ],
     "observability": {
@@ -61,19 +64,22 @@
         "binding": "DB",
         "database_name": "my-moment",
         "database_id": "c97bada7-4af1-44c7-85e3-16992959c181",
-        "migrations_dir": "./db/migrations"
+        "migrations_dir": "./db/migrations",
+        "remote": true
       }
     ],
     "kv_namespaces": [
       {
         "binding": "MOMENT_CACHE",
-        "id": "50250d1bc6a04bc797cf15cfafdbec07"
+        "id": "50250d1bc6a04bc797cf15cfafdbec07",
+        "remote": true
       }
     ],
     "r2_buckets": [
       {
         "binding": "MOMENT_BUCKET",
-        "bucket_name": "cherry-studio"
+        "bucket_name": "cherry-studio",
+        "remote": true
       }
     ],
     "observability": {
@@ -86,5 +92,5 @@
       }
     }
   },
-  "text": "{\n  \"name\": \"my-moment\",\n  \"account_id\": \"fb71c4eceaf623ae1b19b8b37d7a38cf\",\n  \"compatibility_date\": \"2026-08-01\",\n  \"upload_source_maps\": true,\n  \"workers_dev\": false,\n  \"preview_urls\": false,\n  \"routes\": [\n    {\n      \"pattern\": \"moment.you-find.me\",\n      \"custom_domain\": true\n    }\n  ],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"my-moment\",\n      \"database_id\": \"c97bada7-4af1-44c7-85e3-16992959c181\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"kv_namespaces\": [\n    {\n      \"binding\": \"MOMENT_CACHE\",\n      \"id\": \"50250d1bc6a04bc797cf15cfafdbec07\"\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"MOMENT_BUCKET\",\n      \"bucket_name\": \"cherry-studio\"\n    }\n  ],\n  \"observability\": {\n    \"logs\": {\n      \"enabled\": true,\n      \"invocation_logs\": true\n    },\n    \"traces\": {\n      \"enabled\": true\n    }\n  }\n}\n"
+  "text": "{\n  \"name\": \"my-moment\",\n  \"account_id\": \"fb71c4eceaf623ae1b19b8b37d7a38cf\",\n  \"compatibility_date\": \"2026-08-01\",\n  \"upload_source_maps\": true,\n  \"workers_dev\": false,\n  \"preview_urls\": false,\n  \"routes\": [\n    {\n      \"pattern\": \"moment.you-find.me\",\n      \"custom_domain\": true\n    }\n  ],\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"my-moment\",\n      \"database_id\": \"c97bada7-4af1-44c7-85e3-16992959c181\",\n      \"migrations_dir\": \"./db/migrations\",\n      \"remote\": true\n    }\n  ],\n  \"kv_namespaces\": [\n    {\n      \"binding\": \"MOMENT_CACHE\",\n      \"id\": \"50250d1bc6a04bc797cf15cfafdbec07\",\n      \"remote\": true\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"MOMENT_BUCKET\",\n      \"bucket_name\": \"cherry-studio\",\n      \"remote\": true\n    }\n  ],\n  \"observability\": {\n    \"logs\": {\n      \"enabled\": true,\n      \"invocation_logs\": true\n    },\n    \"traces\": {\n      \"enabled\": true\n    }\n  }\n}\n"
 }

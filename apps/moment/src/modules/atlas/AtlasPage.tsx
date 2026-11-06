@@ -1,8 +1,16 @@
-import { Show, createMemo, createSignal, lazy, onSettled } from "solid-js";
+import { For, Show, createMemo, createSignal, lazy, onSettled } from "solid-js";
 import { useNavigate, useSearch } from "@tanstack/solid-router";
 import { z } from "zod";
-import { CalendarDays, MapPin, X } from "lucide-solid";
-import { Button, Spinner } from "@my-moment/ui";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-solid";
+import {
+  Button,
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+  Spinner,
+  cn,
+} from "@my-moment/ui";
 import { PageHeader } from "~/components/PageHeader";
 import { Segment } from "~/components/Segment";
 import { PhotoViewer } from "~/modules/viewer/PhotoViewer";
@@ -50,6 +58,15 @@ export function AtlasPage() {
   const day = createMemo(() => search().day);
   const months = createMemo(() => groupMonths(photos(), today));
   const days = createMemo(() => new Map(months().flatMap((month) => [...month.days])));
+  const month = createMemo(() => {
+    const wanted = search().month;
+    const selected = day();
+    const key = wanted ? wanted : selected ? selected.slice(0, 7) : "";
+    const found = months().find((entry) => entry.month === key);
+    if (found) return found;
+    const recent = months().find((entry) => entry.count > 0);
+    return recent ? recent : months()[0];
+  });
   const located = createMemo(() => photos().filter((photo) => photo.geo));
 
   const scope = createMemo(() => {
@@ -70,6 +87,19 @@ export function AtlasPage() {
 
   const viewerIndex = () => scope().findIndex((photo) => photo.id === search().photo);
 
+  const position = () => months().findIndex((entry) => entry.month === month().month);
+  const label = (value: string) =>
+    new Date(`${value}-01T00:00:00`).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+  const go = (next: string) =>
+    void navigate({
+      search: { view: "calendar", month: next },
+      replace: true,
+      resetScroll: false,
+    });
+
   const show = (next: AtlasView) =>
     void navigate({ search: { view: next, day: day() }, replace: true });
 
@@ -82,7 +112,7 @@ export function AtlasPage() {
 
   const closePhoto = () =>
     void navigate({
-      search: { view: view(), day: day() },
+      search: { view: view(), day: day(), month: search().month },
       replace: true,
       resetScroll: false,
     });
@@ -98,7 +128,63 @@ export function AtlasPage() {
               location
             </>
           }
-          controls={<Segment<AtlasView> options={VIEW_OPTIONS} value={view()} onChange={show} />}
+          controls={
+            <>
+              <Show when={view() === "calendar" && !loading()}>
+                <div class="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 rounded-full"
+                    disabled={position() >= months().length - 1}
+                    onClick={() => go(months()[position() + 1].month)}
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft size={16} />
+                  </Button>
+                  <Popover placement="bottom">
+                    <PopoverTrigger
+                      as={"div"}
+                      class="flex min-w-36 cursor-pointer items-center justify-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                    >
+                      {label(month().month)}
+                      <ChevronDown size={14} class="opacity-50" />
+                    </PopoverTrigger>
+                    <PopoverContent class="max-h-72 w-52 overflow-y-auto p-1">
+                      <For each={months()}>
+                        {(entry) => (
+                          <PopoverClose
+                            as={"button"}
+                            onClick={() => go(entry.month)}
+                            class={cn(
+                              "flex w-full items-center justify-between rounded-sm px-2.5 py-1.5 text-sm transition-colors hover:bg-muted",
+                              entry.month === month().month && "bg-muted font-medium",
+                            )}
+                          >
+                            <span>{label(entry.month)}</span>
+                            <span class="font-mono text-[10px] text-muted-foreground">
+                              {entry.count}
+                            </span>
+                          </PopoverClose>
+                        )}
+                      </For>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 rounded-full"
+                    disabled={position() <= 0}
+                    onClick={() => go(months()[position() - 1].month)}
+                    aria-label="Next month"
+                  >
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+              </Show>
+              <Segment<AtlasView> options={VIEW_OPTIONS} value={view()} onChange={show} />
+            </>
+          }
           class="mb-4"
         />
       </div>
@@ -120,41 +206,9 @@ export function AtlasPage() {
             when={view() === "map"}
             fallback={
               <div class="min-h-0 flex-1 overflow-y-auto">
-                <div class="mx-auto max-w-[70rem] px-4 sm:px-8">
-                  <Show when={day()}>
-                    {(day) => (
-                      <div class="sticky top-0 z-10 mx-auto mb-6 flex max-w-xl backdrop-blur-md items-center gap-1 rounded-full border border-border bg-background/85 py-1 pl-3 pr-1 text-xs shadow-sm lg:max-w-none">
-                        <span class="font-mono">{day()}</span>
-                        <span class="flex-1 text-muted-foreground">
-                          · {scope().length} photo{scope().length !== 1 ? "s" : ""}
-                        </span>
-                        <Show when={scope().some((photo) => photo.geo)}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            class="h-7 gap-1.5 rounded-full px-2.5 text-xs"
-                            onClick={() => show("map")}
-                          >
-                            <MapPin size={13} />
-                            Show on map
-                          </Button>
-                        </Show>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="size-7 rounded-full"
-                          onClick={() =>
-                            void navigate({ search: { view: "calendar" }, replace: true })
-                          }
-                          aria-label="Clear the selected day"
-                        >
-                          <X size={14} />
-                        </Button>
-                      </div>
-                    )}
-                  </Show>
+                <div class="mx-auto flex h-full max-w-[70rem] flex-col px-4 sm:px-8">
                   <Calendar
-                    months={months()}
+                    month={month()}
                     today={today}
                     selected={day() || null}
                     onOpen={(day) => {
@@ -166,6 +220,9 @@ export function AtlasPage() {
                         resetScroll: false,
                       });
                     }}
+                    onLocate={(day) =>
+                      void navigate({ search: { view: "map", day }, replace: true })
+                    }
                   />
                 </div>
               </div>

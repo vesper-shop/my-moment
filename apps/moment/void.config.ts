@@ -29,18 +29,21 @@ export default defineConfig({
         database_name: "my-moment",
         database_id: "c97bada7-4af1-44c7-85e3-16992959c181",
         migrations_dir: "./db/migrations",
+        remote: true,
       },
     ],
     kv_namespaces: [
       {
         binding: "MOMENT_CACHE",
         id: "50250d1bc6a04bc797cf15cfafdbec07",
+        remote: true,
       },
     ],
     r2_buckets: [
       {
         binding: "MOMENT_BUCKET",
         bucket_name: "cherry-studio",
+        remote: true,
       },
     ],
     observability: {

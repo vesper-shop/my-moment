@@ -10,6 +10,10 @@ export const Route = createFileRoute("/atlas")({
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
+    month: z
+      .string()
+      .regex(/^\d{4}-\d{2}$/)
+      .optional(),
     photo: z.string().optional(),
   }),
   component: AtlasPage,

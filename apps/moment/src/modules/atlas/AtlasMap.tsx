@@ -20,6 +20,8 @@ const featureSchema = z.object({
   ]),
 });
 
+const leavesSchema = z.array(z.object({ properties: z.object({ id: z.string() }) })).min(1);
+
 interface AtlasMapProps {
   points: AtlasPoint[];
   groups: PlaceGroup[];
@@ -223,12 +225,21 @@ export function AtlasMap(props: AtlasMapProps) {
           const element = document.createElement("button");
           element.type = "button";
           if ("cluster" in value) {
+            const source = created.getSource<mapboxgl.GeoJSONSource>(SOURCE);
+            if (!source) continue;
             element.className = "atlas-cluster";
-            element.textContent = String(value.point_count);
             element.setAttribute("aria-label", `${value.point_count} photos`);
+            const thumbnail = document.createElement("img");
+            thumbnail.alt = "";
+            thumbnail.loading = "lazy";
+            element.appendChild(thumbnail);
+            source.getClusterLeaves(value.cluster_id, 1, 0, (reason, leaves) => {
+              const parsed = leavesSchema.safeParse(leaves);
+              if (reason || !parsed.success) return;
+              const image = images().get(parsed.data[0].properties.id);
+              if (image) thumbnail.src = image;
+            });
             element.addEventListener("click", () => {
-              const source = created.getSource<mapboxgl.GeoJSONSource>(SOURCE);
-              if (!source) return;
               source.getClusterExpansionZoom(value.cluster_id, (reason, zoom) => {
                 if (reason || typeof zoom !== "number") return;
                 created.easeTo({ center: [lng, lat], zoom });
