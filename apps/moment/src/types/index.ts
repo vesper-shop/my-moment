@@ -1,4 +1,5 @@
-export type { AtlasMonth, AtlasPoint, AtlasView } from "./atlas";
+export { placeGroupSchema } from "./atlas";
+export type { AtlasMonth, AtlasPoint, AtlasView, PlaceGroup } from "./atlas";
 export { mediaFormSchema, mediaItemSchema, mediaKindSchema } from "./media";
 export type { MediaFormData, MediaFormInput, MediaItem, MediaKind } from "./media";
 export type { MusicResponse } from "./music";

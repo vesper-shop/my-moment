@@ -27,6 +27,7 @@
     "lucide-solid": "1.69.0",
     "mapbox-gl": "3.34.2",
     "thumbhash": "0.1.1",
+    "yaml": "2.9.1",
     "zod": "4.6.7"
   },
   "devDependencies": {

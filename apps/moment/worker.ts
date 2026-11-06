@@ -63,6 +63,7 @@ import {
 import type { MessageCursor, WorkerBindings } from "~/types";
 import { PUBLIC_PAGE_META, SITE_NAME, SITE_ORIGIN, type PublicPageKey } from "~/lib/seo";
 import { MAPBOX_TOKEN } from "~/lib/map";
+import { DEFAULT_GROUPS, groups } from "~/modules/atlas/places";
 import { createMcpProtectedRequestHandler } from "@better-auth/mcp";
 import { PROTECTED_RESOURCE_METADATA, RESOURCE_SERVER } from "~/lib/server/oauth";
 import { createMomentMcpHandler } from "~/lib/server/mcp";
@@ -536,7 +537,6 @@ app.get("/api/og/:section", async (c) => {
   let subtitle: string;
   let total: number;
   let urls: string[] = [];
-  let located: { lat: number; lng: number }[] = [];
   if (section === "gallery") {
     total = await countPhotos(c.env.DB);
     title = "Gallery";
@@ -568,10 +568,9 @@ app.get("/api/og/:section", async (c) => {
       items.flatMap((item) => (item.imageUrl ? [item.imageUrl] : [])).slice(0, 2),
     );
   } else if (section === "atlas") {
-    located = (await listAllPhotos(c.env.DB)).flatMap((photo) => (photo.geo ? [photo.geo] : []));
-    total = located.length;
+    total = 0;
     title = "Atlas";
-    subtitle = count(total, "place");
+    subtitle = "Places that became part of the story";
   } else if (section === "guestbook") {
     total = 0;
     title = "Guestbook";
@@ -618,16 +617,22 @@ app.get("/api/og/:section", async (c) => {
     if (map.ok) {
       images.push(`data:image/png;base64,${arrayBufferToBase64(await map.arrayBuffer())}`);
       const world = 512 * 2 ** zoom;
-      const [[cx, cy], ...points] = [{ lng: center[0], lat: center[1] }, ...located].map(
-        ({ lng, lat }): [number, number] => {
-          const sin = Math.sin((lat * Math.PI) / 180);
-          return [
-            ((lng + 180) / 360) * world,
-            (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * world,
-          ];
-        },
-      );
-      dots = points.map(([x, y]) => ({ x: x - cx + 250, y: y - cy + 250, color: "#d97757" }));
+      const [[cx, cy], ...points] = [
+        { coords: center, color: "" },
+        ...groups
+          .filter((group) => DEFAULT_GROUPS.includes(group.label))
+          .flatMap((group) =>
+            group.places.map((place) => ({ coords: place.coords, color: group.color })),
+          ),
+      ].map(({ coords: [lng, lat], color }): [number, number, string] => {
+        const sin = Math.sin((lat * Math.PI) / 180);
+        return [
+          ((lng + 180) / 360) * world,
+          (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * world,
+          color,
+        ];
+      });
+      dots = points.map(([x, y, color]) => ({ x: x - cx + 250, y: y - cy + 250, color }));
     }
   }
 

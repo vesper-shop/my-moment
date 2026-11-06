@@ -1,0 +1,121 @@
+- label: Visited
+  color: "#10b981"
+  places:
+    - label: Suzhou
+      coords: [120.5853, 31.2989]
+      size: 0.08
+    - label: Nanjing
+      coords: [118.7969, 32.0603]
+      size: 0.08
+    - label: Xiamen
+      coords: [118.0894, 24.4798]
+      size: 0.08
+    - label: Beijing
+      coords: [116.4074, 39.9042]
+      size: 0.08
+    - label: Qingdao
+      coords: [120.3826, 36.0671]
+      size: 0.08
+    - label: Lanzhou
+      coords: [103.8343, 36.0611]
+      size: 0.08
+    - label: Qinghai Lake
+      coords: [100.264, 36.9001]
+      size: 0.08
+    - label: Xining
+      coords: [101.7782, 36.6171]
+      size: 0.08
+    - label: Hohhot
+      coords: [111.7492, 40.8426]
+      size: 0.08
+    - label: Xi'an
+      coords: [108.9398, 34.3416]
+      size: 0.08
+    - label: Hangzhou
+      coords: [120.1551, 30.2741]
+      size: 0.08
+    - label: Lincoln
+      coords: [-0.5406, 53.2307]
+      size: 0.1
+    - label: London
+      coords: [-0.1278, 51.5074]
+      size: 0.08
+    - label: Manchester
+      coords: [-2.2426, 53.4808]
+      size: 0.08
+    - label: Leeds
+      coords: [-1.5491, 53.8008]
+      size: 0.08
+    - label: Edinburgh
+      coords: [-3.1883, 55.9533]
+      size: 0.08
+    - label: Loch Ness
+      coords: [-4.45, 57.31]
+      size: 0.08
+    - label: Three Sisters
+      coords: [-5.02, 56.67]
+      size: 0.08
+    - label: Marseille
+      coords: [5.3698, 43.2965]
+      size: 0.08
+    - label: Nice
+      coords: [7.262, 43.7102]
+      size: 0.08
+    - label: Monaco
+      coords: [7.4246, 43.7384]
+      size: 0.08
+    - label: Paris
+      coords: [2.3522, 48.8566]
+      size: 0.08
+- label: Stay
+  color: "#8b5cf6"
+  places:
+    - label: Nottingham
+      coords: [-1.1581, 52.9548]
+      size: 0.1
+    - label: Shanghai
+      coords: [121.4737, 31.2304]
+      size: 0.1
+    - label: Hangzhou Bay
+      coords: [121.2, 30.3]
+      size: 0.08
+- label: Residence
+  color: "#f59e0b"
+  places:
+    - label: Ningbo
+      coords: [121.544, 29.8683]
+      size: 0.1
+      current: true
+- label: Airports
+  color: "#0ea5e9"
+  places:
+    - label: Helsinki
+      coords: [24.9384, 60.1699]
+      size: 0.08
+    - label: Chengdu
+      coords: [104.0668, 30.5728]
+      size: 0.08
+    - label: Guangzhou
+      coords: [113.2644, 23.1291]
+      size: 0.08
+- label: Wishlist
+  color: "#f43f5e"
+  places:
+    - label: Oslo
+      coords: [10.7522, 59.9139]
+      size: 0.08
+    - label: Bergen
+      coords: [5.3221, 60.393]
+      size: 0.08
+    - label: Glasgow
+      coords: [-4.2518, 55.8642]
+      size: 0.08
+    - label: Hong Kong
+      coords: [114.1694, 22.3193]
+      size: 0.08
+    - label: Shenzhen
+      coords: [114.0579, 22.5431]
+      size: 0.08
+    - label: Singapore
+      coords: [103.8198, 1.3521]
+      size: 0.08

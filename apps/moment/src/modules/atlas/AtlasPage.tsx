@@ -1,7 +1,7 @@
 import { Show, createMemo, createSignal, lazy, onSettled } from "solid-js";
 import { useNavigate, useSearch } from "@tanstack/solid-router";
 import { z } from "zod";
-import { CalendarDays, X } from "lucide-solid";
+import { CalendarDays, MapPin, X } from "lucide-solid";
 import { Button, Spinner } from "@my-moment/ui";
 import { PageHeader } from "~/components/PageHeader";
 import { Segment } from "~/components/Segment";
@@ -9,6 +9,7 @@ import { PhotoViewer } from "~/modules/viewer/PhotoViewer";
 import { photoItemSchema, type AtlasPoint, type AtlasView, type PhotoItem } from "~/types";
 import { Calendar } from "./Calendar";
 import { groupMonths } from "./months";
+import { DEFAULT_GROUPS, groups } from "./places";
 
 const AtlasMap = lazy(() => import("./AtlasMap").then((module) => ({ default: module.AtlasMap })));
 
@@ -120,6 +121,38 @@ export function AtlasPage() {
             fallback={
               <div class="min-h-0 flex-1 overflow-y-auto">
                 <div class="mx-auto max-w-[70rem] px-4 sm:px-8">
+                  <Show when={day()}>
+                    {(day) => (
+                      <div class="sticky top-0 z-10 mx-auto mb-6 flex max-w-xl backdrop-blur-md items-center gap-1 rounded-full border border-border bg-background/85 py-1 pl-3 pr-1 text-xs shadow-sm lg:max-w-none">
+                        <span class="font-mono">{day()}</span>
+                        <span class="flex-1 text-muted-foreground">
+                          · {scope().length} photo{scope().length !== 1 ? "s" : ""}
+                        </span>
+                        <Show when={scope().some((photo) => photo.geo)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            class="h-7 gap-1.5 rounded-full px-2.5 text-xs"
+                            onClick={() => show("map")}
+                          >
+                            <MapPin size={13} />
+                            Show on map
+                          </Button>
+                        </Show>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          class="size-7 rounded-full"
+                          onClick={() =>
+                            void navigate({ search: { view: "calendar" }, replace: true })
+                          }
+                          aria-label="Clear the selected day"
+                        >
+                          <X size={14} />
+                        </Button>
+                      </div>
+                    )}
+                  </Show>
                   <Calendar
                     months={months()}
                     today={today}
@@ -133,16 +166,18 @@ export function AtlasPage() {
                         resetScroll: false,
                       });
                     }}
-                    onLocate={(day) =>
-                      void navigate({ search: { view: "map", day }, replace: true })
-                    }
                   />
                 </div>
               </div>
             }
           >
             <div class="relative mx-auto min-h-0 w-full max-w-[70rem] flex-1">
-              <AtlasMap points={points()} onSelect={openPhoto} />
+              <AtlasMap
+                points={points()}
+                groups={groups}
+                enabled={DEFAULT_GROUPS}
+                onSelect={openPhoto}
+              />
               <Show when={day()}>
                 {(day) => (
                   <div class="absolute left-3 top-3 z-20 flex items-center gap-1 rounded-full border border-white/20 bg-background/75 py-1 pl-3 pr-1 text-xs shadow-lg backdrop-blur-md">
