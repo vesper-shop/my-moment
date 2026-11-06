@@ -19,13 +19,13 @@
   },
   "devDependencies": {
     "@solidjs/web": "2.0.0-rc.14",
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.4",
     "@types/node": "26.6.6",
     "solid-js": "2.0.0-rc.14",
-    "tailwindcss": "4.3.3",
+    "tailwindcss": "4.3.4",
     "typescript": "7.0.2",
     "vite-plugin-solid": "3.0.0-next.27",
-    "vite-plus": "1.4.0"
+    "vite-plus": "1.5.0"
   },
   "packageManager": "pnpm@12.10.1"
 }

@@ -74,6 +74,18 @@ describe("EXIF extraction", () => {
     expect(result).toEqual({ date: null, geo: null });
   });
 
+  it("rejects the zeroed GPS block a camera writes without a fix", async () => {
+    mocks.parseMetadata.mockImplementation(async (_file, options) => ({
+      success: true,
+      data: options.transform(JSON.stringify([{ GPSLatitude: 0, GPSLongitude: 0 }])),
+      exitCode: 0,
+    }));
+
+    const result = await extractExifMetadata(new File(["image"], "IMG_20260414.jpg"));
+
+    expect(result.geo).toBeNull();
+  });
+
   it("rejects unsuccessful ExifTool results", async () => {
     mocks.parseMetadata.mockResolvedValue({
       success: false,

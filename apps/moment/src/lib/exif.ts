@@ -45,7 +45,8 @@ export async function extractExifMetadata(file: File): Promise<ExtractedExifMeta
     lat <= 90 &&
     typeof lng === "number" &&
     lng >= -180 &&
-    lng <= 180
+    lng <= 180 &&
+    (lat !== 0 || lng !== 0)
       ? { lat, lng }
       : null;
 

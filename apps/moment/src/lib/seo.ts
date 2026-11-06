@@ -8,11 +8,11 @@ export const PUBLIC_PAGE_META = {
     path: "/",
     image: "/api/og/gallery",
   },
-  journey: {
-    title: "Journey — My Moment",
-    description: "A map of places that became part of the story.",
-    path: "/journey",
-    image: "/api/og/journey",
+  atlas: {
+    title: "Atlas — My Moment",
+    description: "Every photo on a map and on a calendar.",
+    path: "/atlas",
+    image: "/api/og/atlas",
   },
   guestbook: {
     title: "Guestbook — My Moment",

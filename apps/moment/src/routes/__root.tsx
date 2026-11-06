@@ -39,7 +39,7 @@ const THEME_KEY = "my-moment:theme";
 
 const TABS = [
   { href: "/", label: "Gallery", Icon: Images },
-  { href: "/journey", label: "Journey", Icon: Map },
+  { href: "/atlas", label: "Atlas", Icon: Map },
   { href: "/collection", label: "Collection", Icon: Library },
 ] as const;
 
@@ -110,13 +110,13 @@ function RootLayout() {
     });
   });
 
-  const isJourney = () => currentPath() === "/journey" || currentPath().startsWith("/journey/");
+  const isAtlas = () => currentPath() === "/atlas" || currentPath().startsWith("/atlas/");
   const isMusicView = () => {
     if (currentPath() !== "/collection" && currentPath() !== "/collection/") return false;
     const search = router.state.location.search as Record<string, unknown> | undefined;
     return search?.view === "music";
   };
-  const isFullBleed = () => isJourney() || isMusicView();
+  const isFullBleed = () => isAtlas() || isMusicView();
   const tabIsActive = (href: string) =>
     href === "/"
       ? currentPath() === "/" || currentPath().startsWith("/photos/")

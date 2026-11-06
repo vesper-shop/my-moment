@@ -9,7 +9,7 @@ Vite+ · Void · SolidJS · TypeScript · TailwindCSS v4 · Hono · TanStack Rou
 ## Features
 
 - **Gallery** — photos in masonry and list views
-- **Journey** — places on an interactive map
+- **Atlas** — every photo on a map and on a calendar
 - **Collection** — playlists, anime, and films
 - **Guestbook** — signed-in messages with replies
 - **Haul / Wishlist** — purchases and wants
@@ -35,7 +35,6 @@ The MCP endpoint at `/api/mcp` takes the same token; clients discover the gatewa
 
 - [Afilmory/afilmory](https://github.com/Afilmory/afilmory) — HEIC/HEIF detection and browser-side conversion
 - [Pleasurecruise/my-memos](https://github.com/Pleasurecruise/my-memos) — workspace layout, UI package, theming, and Cloudflare patterns
-- [sxzz/kevins-journey](https://github.com/sxzz/kevins-journey) — Journey map visualization
 - [dogxii/iGoods](https://github.com/dogxii/iGoods) — Haul item model, ratings, and filtering
 - [dogxii/astro-doge](https://github.com/dogxii/astro-doge) — Guestbook interactions and emoji packs
 

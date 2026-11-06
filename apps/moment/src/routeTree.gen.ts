@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as JourneyRouteImport } from './routes/journey'
+import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as SnapshotRouteImport } from './routes/snapshot'
 import { Route as UploadRouteImport } from './routes/upload'
@@ -27,9 +27,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JourneyRoute = JourneyRouteImport.update({
-  id: '/journey',
-  path: '/journey',
+const AtlasRoute = AtlasRouteImport.update({
+  id: '/atlas',
+  path: '/atlas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesRoute = MessagesRouteImport.update({
@@ -85,7 +85,7 @@ const PhotosIdEditRoute = PhotosIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/journey': typeof JourneyRoute
+  '/atlas': typeof AtlasRoute
   '/messages': typeof MessagesRoute
   '/snapshot': typeof SnapshotRoute
   '/upload': typeof UploadRoute
@@ -99,7 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/journey': typeof JourneyRoute
+  '/atlas': typeof AtlasRoute
   '/messages': typeof MessagesRoute
   '/snapshot': typeof SnapshotRoute
   '/upload': typeof UploadRoute
@@ -114,7 +114,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/journey': typeof JourneyRoute
+  '/atlas': typeof AtlasRoute
   '/messages': typeof MessagesRoute
   '/snapshot': typeof SnapshotRoute
   '/upload': typeof UploadRoute
@@ -130,7 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/journey'
+    | '/atlas'
     | '/messages'
     | '/snapshot'
     | '/upload'
@@ -144,7 +144,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/journey'
+    | '/atlas'
     | '/messages'
     | '/snapshot'
     | '/upload'
@@ -158,7 +158,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/journey'
+    | '/atlas'
     | '/messages'
     | '/snapshot'
     | '/upload'
@@ -173,7 +173,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  JourneyRoute: typeof JourneyRoute
+  AtlasRoute: typeof AtlasRoute
   MessagesRoute: typeof MessagesRoute
   SnapshotRoute: typeof SnapshotRoute
   UploadRoute: typeof UploadRoute
@@ -195,11 +195,11 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/journey': {
-      id: '/journey'
-      path: '/journey'
-      fullPath: '/journey'
-      preLoaderRoute: typeof JourneyRouteImport
+    '/atlas': {
+      id: '/atlas'
+      path: '/atlas'
+      fullPath: '/atlas'
+      preLoaderRoute: typeof AtlasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages': {
@@ -277,7 +277,7 @@ declare module '@tanstack/solid-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  JourneyRoute: JourneyRoute,
+  AtlasRoute: AtlasRoute,
   MessagesRoute: MessagesRoute,
   SnapshotRoute: SnapshotRoute,
   UploadRoute: UploadRoute,

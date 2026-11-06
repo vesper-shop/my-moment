@@ -12,6 +12,7 @@ import {
   deletePhoto as deletePhotoMetadata,
   getPhoto,
   isObjectInUse,
+  listAllPhotos,
   listPhotos,
   updatePhoto,
 } from "./repository";
@@ -21,6 +22,7 @@ export {
   createPhoto,
   getPhoto,
   isValidCursor,
+  listAllPhotos,
   listRecentPhotos,
   listPhotos,
   listTagCounts,

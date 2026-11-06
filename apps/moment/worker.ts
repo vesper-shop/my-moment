@@ -10,6 +10,7 @@ import {
   deletePhoto,
   getPhoto,
   isValidCursor,
+  listAllPhotos,
   listPhotos,
   listRecentPhotos,
   listTagCounts,
@@ -62,7 +63,6 @@ import {
 import type { MessageCursor, WorkerBindings } from "~/types";
 import { PUBLIC_PAGE_META, SITE_NAME, SITE_ORIGIN, type PublicPageKey } from "~/lib/seo";
 import { MAPBOX_TOKEN } from "~/lib/map";
-import { DEFAULT_GROUPS, groups } from "~/modules/journey/groups";
 import { createMcpProtectedRequestHandler } from "@better-auth/mcp";
 import { PROTECTED_RESOURCE_METADATA, RESOURCE_SERVER } from "~/lib/server/oauth";
 import { createMomentMcpHandler } from "~/lib/server/mcp";
@@ -211,7 +211,7 @@ async function resolvePageMeta(url: URL, env: WorkerBindings): Promise<PageMeta>
     }
     return { ...staticPageMeta(url.origin, "gallery"), jsonLd: websiteJsonLd(url.origin) };
   }
-  if (path === "/journey") return staticPageMeta(url.origin, "journey");
+  if (path === "/atlas") return staticPageMeta(url.origin, "atlas");
   if (path === "/messages" || path === "/snapshot") {
     return staticPageMeta(url.origin, "guestbook");
   }
@@ -406,6 +406,11 @@ app.get("/api/gallery", async (c) => {
   return c.json({ ...page, tags, total, canUpload });
 });
 
+app.get("/api/atlas", async (c) => {
+  const [photos, canUpload] = await Promise.all([listAllPhotos(c.env.DB), requestIsOwner(c)]);
+  return c.json({ photos, canUpload });
+});
+
 // Later gallery pages, like memos' GET /api/memos.
 app.get("/api/photos", async (c) => {
   const query = photoListQuerySchema.safeParse(c.req.query());
@@ -531,6 +536,7 @@ app.get("/api/og/:section", async (c) => {
   let subtitle: string;
   let total: number;
   let urls: string[] = [];
+  let located: { lat: number; lng: number }[] = [];
   if (section === "gallery") {
     total = await countPhotos(c.env.DB);
     title = "Gallery";
@@ -561,10 +567,11 @@ app.get("/api/og/:section", async (c) => {
     urls = [anime, film].flatMap((items) =>
       items.flatMap((item) => (item.imageUrl ? [item.imageUrl] : [])).slice(0, 2),
     );
-  } else if (section === "journey") {
-    total = 0;
-    title = "Journey";
-    subtitle = "Places that became part of the story";
+  } else if (section === "atlas") {
+    located = (await listAllPhotos(c.env.DB)).flatMap((photo) => (photo.geo ? [photo.geo] : []));
+    total = located.length;
+    title = "Atlas";
+    subtitle = count(total, "place");
   } else if (section === "guestbook") {
     total = 0;
     title = "Guestbook";
@@ -601,7 +608,7 @@ app.get("/api/og/:section", async (c) => {
   ).filter((image) => image !== null);
 
   let dots: OgDot[] = [];
-  if (section === "journey") {
+  if (section === "atlas") {
     const zoom = 1.15;
     const center: [number, number] = [58.5, 44];
     const map = await fetch(
@@ -611,22 +618,16 @@ app.get("/api/og/:section", async (c) => {
     if (map.ok) {
       images.push(`data:image/png;base64,${arrayBufferToBase64(await map.arrayBuffer())}`);
       const world = 512 * 2 ** zoom;
-      const [[cx, cy], ...points] = [
-        { coords: center, color: "" },
-        ...groups
-          .filter((group) => DEFAULT_GROUPS.includes(group.label))
-          .flatMap((group) =>
-            group.places.map((place) => ({ coords: place.coords, color: group.color })),
-          ),
-      ].map(({ coords: [lng, lat], color }): [number, number, string] => {
-        const sin = Math.sin((lat * Math.PI) / 180);
-        return [
-          ((lng + 180) / 360) * world,
-          (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * world,
-          color,
-        ];
-      });
-      dots = points.map(([x, y, color]) => ({ x: x - cx + 250, y: y - cy + 250, color }));
+      const [[cx, cy], ...points] = [{ lng: center[0], lat: center[1] }, ...located].map(
+        ({ lng, lat }): [number, number] => {
+          const sin = Math.sin((lat * Math.PI) / 180);
+          return [
+            ((lng + 180) / 360) * world,
+            (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * world,
+          ];
+        },
+      );
+      dots = points.map(([x, y]) => ({ x: x - cx + 250, y: y - cy + 250, color: "#d97757" }));
     }
   }
 

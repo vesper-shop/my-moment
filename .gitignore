@@ -47,3 +47,5 @@ lerna-debug.log*
 .yarn/install-state.gz
 .yarn-integrity
 .pnp.*
+
+.cloudflare/

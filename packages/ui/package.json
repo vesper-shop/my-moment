@@ -20,7 +20,7 @@
   "dependencies": {
     "@kobalte/core": "2.0.0-alpha.2",
     "clsx": "2.1.1",
-    "lucide-solid": "1.66.0",
+    "lucide-solid": "1.69.0",
     "tailwind-merge": "3.7.0"
   },
   "devDependencies": {

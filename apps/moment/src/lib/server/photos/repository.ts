@@ -154,6 +154,14 @@ export async function listRecentPhotos(d1: D1Database, limit: number): Promise<P
   return rows.map((row) => rowToItem(row, row.tagNames));
 }
 
+export async function listAllPhotos(d1: D1Database): Promise<PhotoItem[]> {
+  const rows = await drizzle(d1)
+    .select({ ...getTableColumns(photos), tagNames: tagNamesColumn })
+    .from(photos)
+    .orderBy(desc(photos.date), desc(photos.id));
+  return rows.map((row) => rowToItem(row, row.tagNames));
+}
+
 export async function countPhotos(d1: D1Database): Promise<number> {
   const [row] = await drizzle(d1).select({ total: count() }).from(photos);
   if (!row) throw new Error("Photo count query returned no row.");
