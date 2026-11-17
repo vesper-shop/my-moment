@@ -11,10 +11,6 @@ export interface EmojiPack {
   items: readonly EmojiItem[];
 }
 
-export interface ImageEmoji extends EmojiItem {
-  display: "emoji" | "sticker";
-}
-
 const FACE_CDN = "https://cdn.jsdmirror.com/gh/vikiboss/face@main/face/apng";
 
 const SUZUME_S5_CDN = "https://stickers.fullyst.com/51780a59-2061-590d-a45f-a6b8965814ab/thumb";
@@ -212,17 +208,6 @@ export const EMOJI_PACKS: readonly EmojiPack[] = [
     ],
   },
 ];
-
-const imageEmojiEntries = EMOJI_PACKS.flatMap((pack) =>
-  pack.type === "image"
-    ? pack.items.map(
-        (item) =>
-          [`:${pack.key}_${item.name}:`, { ...item, display: pack.display ?? "emoji" }] as const,
-      )
-    : [],
-);
-
-export const IMAGE_EMOJIS = new Map<string, ImageEmoji>(imageEmojiEntries);
 
 export function emojiInputValue(pack: EmojiPack, item: EmojiItem) {
   return pack.type === "image" ? `:${pack.key}_${item.name}:` : item.value;

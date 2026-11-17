@@ -1,24 +1,13 @@
 import { createEffect, createSignal, onSettled, Show } from "solid-js";
+import { z } from "zod";
 import { createRootRoute, HeadContent, Link, Outlet, useRouter } from "@tanstack/solid-router";
-import { useSession, signIn, signOut } from "~/lib/services/auth";
-import {
-  Images,
-  Map,
-  Library,
-  MessageCircle,
-  ShoppingBag,
-  Heart,
-  Sun,
-  Moon,
-  LogIn,
-  LogOut,
-} from "lucide-solid";
+import { Images, Map, Library, MessageCircle, ShoppingBag, Heart, Sun, Moon } from "lucide-solid";
 import {
   Avatar,
   Button,
   Popover,
-  PopoverTrigger,
   PopoverContent,
+  PopoverTrigger,
   Toaster,
   applyTheme,
 } from "@my-moment/ui";
@@ -49,12 +38,55 @@ const SECONDARY_LINKS = [
   { href: "/wish", label: "Wishlist", Icon: Heart },
 ] as const;
 
+const profileSchema = z.object({
+  handle: z.string(),
+  name: z.string(),
+  image: z.string().nullable(),
+});
+const ownerSchema = z.object({ profile: profileSchema.nullable() });
+
+type Profile = z.infer<typeof profileSchema>;
+
+function OwnerCard(props: { profile: Profile }) {
+  return (
+    <Popover placement="bottom-end" gutter={8}>
+      <PopoverTrigger
+        class="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={props.profile.name}
+      >
+        <Avatar src={props.profile.image} fallback={props.profile.name} size="sm" />
+      </PopoverTrigger>
+      <PopoverContent class="w-52">
+        <div class="flex flex-col items-center gap-3 py-1">
+          <Avatar src={props.profile.image} fallback={props.profile.name} size="lg" />
+          <a
+            href={`https://${props.profile.handle}.noted-this.date/`}
+            target="_blank"
+            rel="noreferrer"
+            class="text-center hover:text-foreground"
+          >
+            <p class="text-sm font-medium">{props.profile.name}</p>
+            <p class="text-xs text-muted-foreground">@{props.profile.handle}</p>
+          </a>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function RootLayout() {
-  const session = useSession();
   const router = useRouter();
 
   const [isDark, setIsDark] = createSignal(false);
+  const [profile, setProfile] = createSignal<Profile | null>(null);
   const [themeBtnEl, setThemeBtnEl] = createSignal<HTMLButtonElement | null>(null);
+
+  onSettled(() => {
+    void fetch("/api/profile")
+      .then(async (response) => ownerSchema.parse(await response.json()))
+      .then((data) => setProfile(data.profile))
+      .catch(() => setProfile(null));
+  });
 
   onSettled(() => {
     const saved = localStorage.getItem(THEME_KEY);
@@ -122,79 +154,6 @@ function RootLayout() {
       ? currentPath() === "/" || currentPath().startsWith("/photos/")
       : currentPath() === href || currentPath().startsWith(`${href}/`);
 
-  const user = () => session()?.data?.user ?? null;
-
-  const handleSignOut = async () => {
-    await signOut();
-    window.location.href = "/";
-  };
-
-  const handleSignIn = () => {
-    signIn.social({ provider: "you-find-me", callbackURL: currentPath() });
-  };
-
-  const AuthDropdown = () => (
-    <Popover placement="bottom-end">
-      <PopoverTrigger as={"div"} class="inline-flex">
-        <Show
-          when={user()}
-          fallback={
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-8 w-8 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Sign in"
-            >
-              <LogIn size={15} />
-            </Button>
-          }
-        >
-          {(u) => (
-            <Button
-              variant="ghost"
-              size="icon"
-              class="rounded-full focus-visible:ring-2 focus-visible:ring-accent shrink-0"
-            >
-              <Avatar src={u().image ?? undefined} fallback={u().name ?? "?"} size="sm" />
-            </Button>
-          )}
-        </Show>
-      </PopoverTrigger>
-      <PopoverContent class="w-52 p-0">
-        <Show
-          when={user()}
-          fallback={
-            <div class="flex flex-col items-center gap-3 py-4 px-4">
-              <Avatar size="lg" fallback="?" />
-              <p class="text-sm text-muted-foreground">Not signed in</p>
-              <Button size="sm" class="w-full gap-2" onClick={handleSignIn}>
-                Sign in with you-find.me
-              </Button>
-            </div>
-          }
-        >
-          {(u) => (
-            <div class="flex flex-col items-center gap-3 py-4 px-4">
-              <Avatar src={u().image ?? undefined} fallback={u().name ?? "?"} size="lg" />
-              <div class="text-center">
-                <p class="text-sm font-medium">{u().name}</p>
-                <p class="text-xs text-muted-foreground truncate max-w-44">{u().email}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                class="w-full gap-2 text-muted-foreground"
-                onClick={handleSignOut}
-              >
-                <LogOut size={13} /> Sign out
-              </Button>
-            </div>
-          )}
-        </Show>
-      </PopoverContent>
-    </Popover>
-  );
-
   return (
     <div
       id="app-scroll-container"
@@ -218,7 +177,7 @@ function RootLayout() {
               <Sun size={15} />
             </Show>
           </Button>
-          <AuthDropdown />
+          <Show when={profile()}>{(profile) => <OwnerCard profile={profile()} />}</Show>
         </div>
       </header>
 
@@ -303,8 +262,7 @@ function RootLayout() {
                   <Sun size={15} />
                 </Show>
               </Button>
-
-              <AuthDropdown />
+              <Show when={profile()}>{(profile) => <OwnerCard profile={profile()} />}</Show>
             </div>
           </div>
         </header>

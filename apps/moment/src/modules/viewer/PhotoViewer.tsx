@@ -7,21 +7,8 @@ import {
   PanelRightOpen,
   PanelRightClose,
   Share2,
-  Edit3,
-  Trash2,
 } from "lucide-solid";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  Button,
-  Spinner,
-  toast,
-} from "@my-moment/ui";
+import { Button } from "@my-moment/ui";
 import { shareLink } from "~/lib/share";
 import type { PhotoItem } from "~/types";
 import { PhotoDetails } from "./PhotoDetails";
@@ -29,19 +16,14 @@ import { PhotoDetails } from "./PhotoDetails";
 interface PhotoViewerProps {
   photos: PhotoItem[];
   index: number;
-  canEdit: boolean;
   onClose: () => void;
   onIndexChange: (i: number) => void;
-  onEdit: (photo: PhotoItem) => void;
-  onDeleted: (photo: PhotoItem) => void;
 }
 
 export function PhotoViewer(props: PhotoViewerProps) {
   const photo = () => props.photos[props.index];
   const [sidebarOpen, setSidebarOpen] = createSignal(true);
   const [loadedUrl, setLoadedUrl] = createSignal("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = createSignal(false);
-  const [deleting, setDeleting] = createSignal(false);
 
   createEffect(
     () => ({ index: props.index, photos: props.photos }),
@@ -60,26 +42,6 @@ export function PhotoViewer(props: PhotoViewerProps) {
   };
   const goNext = () => {
     if (props.index < props.photos.length - 1) props.onIndexChange(props.index + 1);
-  };
-
-  const deletePhoto = async () => {
-    if (deleting()) return;
-
-    const currentPhoto = photo();
-    setDeleting(true);
-    try {
-      const response = await fetch(`/api/photos/${currentPhoto.id}`, { method: "DELETE" });
-      if (!response.ok) throw new Error("Failed to delete photo");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to delete photo");
-      setDeleting(false);
-      return;
-    }
-
-    setDeleting(false);
-    setDeleteDialogOpen(false);
-    toast.success("Photo deleted");
-    props.onDeleted(currentPhoto);
   };
 
   onSettled(() => {
@@ -118,27 +80,6 @@ export function PhotoViewer(props: PhotoViewerProps) {
               >
                 <Share2 size={15} />
               </Button>
-              <Show when={props.canEdit}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onClick={() => props.onEdit(photo())}
-                >
-                  <Edit3 size={15} />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  class="size-8 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  aria-label="Delete photo"
-                  title="Delete photo"
-                >
-                  <Trash2 size={15} />
-                </Button>
-              </Show>
               <Show when={!sidebarOpen()}>
                 <Button
                   variant="ghost"
@@ -236,45 +177,6 @@ export function PhotoViewer(props: PhotoViewerProps) {
             </div>
           </div>
         </div>
-
-        <AlertDialog
-          open={deleteDialogOpen()}
-          onOpenChange={(open) => {
-            if (!deleting()) setDeleteDialogOpen(open);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this photo?</AlertDialogTitle>
-              <AlertDialogDescription>
-                “{photo().title}” and its thumbnail will be permanently removed, together with all
-                stored metadata. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel as={Button} variant="outline" disabled={deleting()}>
-                Cancel
-              </AlertDialogCancel>
-              <Button
-                variant="destructive"
-                disabled={deleting()}
-                onClick={() => void deletePhoto()}
-              >
-                <Show
-                  when={!deleting()}
-                  fallback={
-                    <>
-                      <Spinner size="sm" /> Deleting…
-                    </>
-                  }
-                >
-                  <Trash2 size={14} />
-                  Delete photo
-                </Show>
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </Portal>
   );

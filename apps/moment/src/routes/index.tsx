@@ -19,7 +19,6 @@ const photoPageSchema = z.object({
 const galleryResponseSchema = photoPageSchema.extend({
   tags: z.array(tagCountSchema),
   total: z.number().int(),
-  canUpload: z.boolean(),
 });
 
 export const Route = createFileRoute("/")({
@@ -38,7 +37,6 @@ function HomePage() {
   const [photos, setPhotos] = createSignal<PhotoItem[]>([]);
   const [tags, setTags] = createSignal<TagCount[]>([]);
   const [total, setTotal] = createSignal(0);
-  const [canUpload, setCanUpload] = createSignal(false);
   const [cursor, setCursor] = createSignal<string | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [loadingMore, setLoadingMore] = createSignal(false);
@@ -75,7 +73,6 @@ function HomePage() {
         setCursor(gallery.nextCursor);
         setTags(gallery.tags);
         setTotal(gallery.total);
-        setCanUpload(gallery.canUpload);
       }
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "Failed to load gallery.";
@@ -134,7 +131,6 @@ function HomePage() {
           photos={photos()}
           tags={tags()}
           total={total()}
-          canUpload={canUpload()}
           hasMore={cursor() !== null}
           loadingMore={loadingMore()}
           onLoadMore={loadMore}

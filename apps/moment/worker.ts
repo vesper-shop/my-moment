@@ -1,72 +1,28 @@
 import { Hono } from "hono";
-import { z } from "zod";
-import { getSession } from "void/auth";
-import { createOwnerGuard, requestIsOwner, type WorkerEnv } from "~/lib/server/access";
-import { findOwnerId } from "~/lib/server/owner";
+import {} from "zod";
+import type { WorkerEnv } from "~/lib/server/access";
 import {
   countPhotos,
-  createPhotoFromR2,
-  createPhotoFromUpload,
-  deletePhoto,
   getPhoto,
   isValidCursor,
-  listAllPhotos,
+  loadPhotos,
   listPhotos,
   listRecentPhotos,
   listTagCounts,
-  updatePhoto,
-} from "~/lib/server/photos/service";
-import { renameTag, deleteTag } from "~/lib/server/photos/repository";
-import { photoCreateSchema, photoListQuerySchema } from "~/lib/server/photos/schema";
-import { PhotoDomainError } from "~/lib/server/photos/errors";
+  photoImage,
+} from "~/lib/server/photos/repository";
+import { haulItems, mediaItems, wishlistItems } from "~/lib/server/collection/static";
+import { callback, authorize, readProfile } from "~/lib/server/vesper";
+import { photoListQuerySchema } from "~/lib/server/photos/schema";
 import type { JsonObject } from "~/types/json";
-import {
-  countHaul,
-  createHaulItem,
-  deleteHaulItem,
-  getHaulItem,
-  listAllHaulItems,
-  updateHaulItem,
-  uploadHaulImage,
-} from "~/lib/server/haul/service";
-import {
-  convertWishlistItem,
-  countWishlist,
-  createWishlistItem,
-  deleteWishlistItem,
-  getWishlistItem,
-  listAllWishlistItems,
-  updateWishlistItem,
-  uploadWishlistImage,
-} from "~/lib/server/wishlist/service";
-import {
-  createMediaItem,
-  deleteMediaItem,
-  getMediaItem,
-  listMediaItems,
-  updateMediaItem,
-  uploadMediaImage,
-} from "~/lib/server/media/service";
 import { getSpotifyMusic } from "~/lib/server/spotify";
-import { mediaFormSchema, mediaKindSchema } from "~/types/media";
-import { goodsFormSchema, wishFormSchema } from "~/types/haul";
-import { photoUpdateSchema } from "~/types/photo";
+import { mediaKindSchema } from "~/types/media";
 import { renderOgImage, renderOgPhoto, renderOgPng, type OgDot } from "~/lib/server/og";
 import { getOgImageVersion, readOgImageKv, writeOgImageKv } from "~/lib/server/og/cache";
-import {
-  createMessage,
-  deleteMessage,
-  getMessageOwner,
-  listMessages,
-  updateMessage,
-} from "~/lib/server/messages/repository";
-import type { MessageCursor, WorkerBindings } from "~/types";
+import type { WorkerBindings } from "~/types";
 import { PUBLIC_PAGE_META, SITE_NAME, SITE_ORIGIN, type PublicPageKey } from "~/lib/seo";
 import { MAPBOX_TOKEN } from "~/lib/map";
 import { DEFAULT_GROUPS, groups } from "~/modules/atlas/places";
-import { createMcpProtectedRequestHandler } from "@better-auth/mcp";
-import { PROTECTED_RESOURCE_METADATA, RESOURCE_SERVER } from "~/lib/server/oauth";
-import { createMomentMcpHandler } from "~/lib/server/mcp";
 import {
   API_LINK_HEADER,
   DISCOVERY_LIMIT,
@@ -87,37 +43,6 @@ import {
 } from "~/lib/server/discovery";
 
 const app = new Hono<WorkerEnv>();
-app.onError((error, c) => {
-  if (error instanceof PhotoDomainError) {
-    return c.json({ error: error.message, code: error.code }, error.httpStatus);
-  }
-  throw error;
-});
-const ownerOnly = createOwnerGuard();
-const uploadOwnerOnly = createOwnerGuard();
-
-const messageCreateSchema = z.object({
-  content: z.string().trim().min(1).max(1000),
-  parentId: z.string().uuid().optional(),
-});
-
-const messageUpdateSchema = messageCreateSchema.pick({ content: true });
-
-const messageCursorSchema = z.string().transform((value, context): MessageCursor => {
-  const separator = value.lastIndexOf("~");
-  const createdAt = separator > 0 ? value.slice(0, separator) : "";
-  const id = separator > 0 ? value.slice(separator + 1) : "";
-  if (Number.isNaN(Date.parse(createdAt)) || !z.string().uuid().safeParse(id).success) {
-    context.addIssue({ code: "custom", message: "invalid cursor" });
-    return z.NEVER;
-  }
-  return { createdAt, id };
-});
-
-const messageListQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(20).default(20),
-  cursor: messageCursorSchema.optional(),
-});
 
 interface PageMeta {
   title: string;
@@ -168,25 +93,9 @@ function staticPageMeta(origin: string, key: PublicPageKey): PageMeta {
 
 async function resolvePageMeta(url: URL, env: WorkerBindings): Promise<PageMeta> {
   const path = url.pathname.replace(/\/$/, "") || "/";
-  const privatePath =
-    path === "/upload" ||
-    path === "/collection/add" ||
-    path.endsWith("/edit") ||
-    path === "/haul/add" ||
-    path === "/wish/add";
-
-  if (privatePath) {
-    return {
-      title: `Private workspace — ${SITE_NAME}`,
-      description: "A private editing workspace.",
-      canonical: absoluteUrl(url.origin, path),
-      robots: "noindex, nofollow, noarchive",
-    };
-  }
-
   if (path === "/") {
     const photoId = url.searchParams.get("photo");
-    const photo = photoId ? await getPhoto(env.DB, photoId) : null;
+    const photo = photoId ? await getPhoto(env, photoId) : null;
     if (photo) {
       const title = photoTitle(photo);
       const image = absoluteUrl(url.origin, photo.url);
@@ -223,7 +132,7 @@ async function resolvePageMeta(url: URL, env: WorkerBindings): Promise<PageMeta>
     if (itemId) {
       const resolved = await (async () => {
         if (view === "wishlist") {
-          const item = await getWishlistItem(env.DB, itemId);
+          const item = wishlistItems.find((entry) => entry.id === itemId);
           return item
             ? {
                 item,
@@ -232,7 +141,7 @@ async function resolvePageMeta(url: URL, env: WorkerBindings): Promise<PageMeta>
             : null;
         }
 
-        const item = await getHaulItem(env.DB, itemId);
+        const item = haulItems.find((entry) => entry.id === itemId);
         return item
           ? {
               item,
@@ -290,106 +199,6 @@ app.get("/api/health", (c) =>
   }),
 );
 
-app.get("/api/owner", async (c) => {
-  c.header("Cache-Control", "no-store");
-  return c.json({ owner: await requestIsOwner(c) });
-});
-
-app.get("/.well-known/oauth-protected-resource", (c) => {
-  c.header("Access-Control-Allow-Origin", "*");
-  c.header("Cache-Control", "public, max-age=3600");
-  return c.json(PROTECTED_RESOURCE_METADATA);
-});
-
-app.post("/api/mcp", async (c) => {
-  if (c.req.header("mcp-session-id")) {
-    return c.json({ error: "MCP sessions are not supported." }, 400);
-  }
-  return createMcpProtectedRequestHandler(RESOURCE_SERVER, async (request) => {
-    const ownerId = await findOwnerId(c.env.DB);
-    if (!ownerId) return Response.json({ error: "Owner account not found." }, { status: 503 });
-    return createMomentMcpHandler(c.env, ownerId).fetch(request);
-  })(c.req.raw);
-});
-
-app.get("/api/messages", async (c) => {
-  const query = messageListQuerySchema.safeParse(c.req.query());
-  if (!query.success) return c.json({ error: query.error.issues[0]?.message }, 400);
-  const session = getSession();
-  const result = await listMessages(
-    c.env.DB,
-    session?.user?.id ?? null,
-    await findOwnerId(c.env.DB),
-    query.data.cursor ?? null,
-    query.data.limit,
-  );
-  return c.json(result);
-});
-
-app.post("/api/messages", async (c) => {
-  const session = getSession();
-  if (!session?.user) return c.json({ ok: false, error: "Sign in to leave a message" }, 401);
-  const parsed = messageCreateSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Invalid message" }, 400);
-  }
-
-  const result = await createMessage(
-    c.env.DB,
-    session.user.id,
-    parsed.data.parentId ?? null,
-    parsed.data.content,
-    await findOwnerId(c.env.DB),
-  );
-  if (!result.ok) {
-    if (result.reason === "rate_limited") {
-      c.header("Retry-After", String(result.retryAfter));
-      return c.json(
-        { ok: false, error: `Please wait ${result.retryAfter}s before posting again` },
-        429,
-      );
-    }
-    return c.json({ ok: false, error: "Replies must target a top-level message" }, 400);
-  }
-  return c.json({ ok: true, message: result.message }, 201);
-});
-
-app.patch("/api/messages/:id", async (c) => {
-  const session = getSession();
-  if (!session?.user) return c.json({ ok: false, error: "Sign in to edit a message" }, 401);
-  const parsed = messageUpdateSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ ok: false, error: parsed.error.issues[0]?.message ?? "Invalid message" }, 400);
-  }
-
-  const owner = await getMessageOwner(c.env.DB, c.req.param("id"));
-  if (!owner) return c.json({ ok: false, error: "Message not found" }, 404);
-  if (owner.authorId !== session.user.id) {
-    return c.json({ ok: false, error: "You can only edit your own messages" }, 403);
-  }
-
-  const message = await updateMessage(
-    c.env.DB,
-    c.req.param("id"),
-    session.user.id,
-    parsed.data.content,
-    await findOwnerId(c.env.DB),
-  );
-  if (!message) return c.json({ ok: false, error: "Message not found" }, 404);
-  return c.json({ ok: true, message });
-});
-
-app.delete("/api/messages/:id", async (c) => {
-  const session = getSession();
-  if (!session?.user) return c.json({ error: "Unauthorized" }, 401);
-  const owner = await getMessageOwner(c.env.DB, c.req.param("id"));
-  if (!owner) return c.json({ error: "Message not found" }, 404);
-  const isHost = session.user.id === (await findOwnerId(c.env.DB));
-  if (owner.authorId !== session.user.id && !isHost) return c.json({ error: "Forbidden" }, 403);
-  await deleteMessage(c.env.DB, c.req.param("id"));
-  return c.json({ ok: true, deletedReplies: owner.isTopLevel });
-});
-
 // First gallery page with the filter panel's tag counts, like memos' page load.
 app.get("/api/gallery", async (c) => {
   const query = photoListQuerySchema.safeParse(c.req.query());
@@ -398,18 +207,16 @@ app.get("/api/gallery", async (c) => {
     return c.json({ error: "Invalid cursor." }, 400);
   }
 
-  const [page, tags, total, canUpload] = await Promise.all([
-    listPhotos(c.env.DB, query.data),
-    listTagCounts(c.env.DB),
-    countPhotos(c.env.DB),
-    requestIsOwner(c),
+  const [page, tags, total] = await Promise.all([
+    listPhotos(c.env, query.data),
+    listTagCounts(c.env),
+    countPhotos(c.env),
   ]);
-  return c.json({ ...page, tags, total, canUpload });
+  return c.json({ ...page, tags, total });
 });
 
 app.get("/api/atlas", async (c) => {
-  const [photos, canUpload] = await Promise.all([listAllPhotos(c.env.DB), requestIsOwner(c)]);
-  return c.json({ photos, canUpload });
+  return c.json({ photos: await loadPhotos(c.env) });
 });
 
 // Later gallery pages, like memos' GET /api/memos.
@@ -419,64 +226,19 @@ app.get("/api/photos", async (c) => {
   if (query.data.cursor && !isValidCursor(query.data.cursor)) {
     return c.json({ error: "Invalid cursor." }, 400);
   }
-  return c.json(await listPhotos(c.env.DB, query.data));
-});
-
-app.post("/api/photos", ownerOnly, async (c) => {
-  const input = photoCreateSchema.safeParse(await c.req.json().catch(() => null));
-  if (!input.success) return c.json({ error: "Invalid photo payload." }, 400);
-  const photo = await createPhotoFromR2(
-    c.env.DB,
-    c.env.MOMENT_BUCKET,
-    c.get("ownerId"),
-    input.data,
-  );
-  return c.json({ photo }, 201);
-});
-
-app.post("/api/photos/upload", uploadOwnerOnly, async (c) => {
-  const result = await createPhotoFromUpload(
-    c.env.DB,
-    c.env.MOMENT_BUCKET,
-    c.get("ownerId"),
-    await c.req.formData(),
-  );
-  if (!result.ok) return c.json({ error: result.error }, 400);
-  return c.json(result.photo);
+  return c.json(await listPhotos(c.env, query.data));
 });
 
 // Photo ids never contain a dot, so stored files such as image1.png reach the R2 route below.
 app.get("/api/photos/:id{[^./]+}", async (c) => {
   const id = c.req.param("id");
-  const photo = await getPhoto(c.env.DB, id);
+  const photo = await getPhoto(c.env, id);
   if (!photo) return c.json({ error: "Photo not found" }, 404);
   return c.json({ photo });
-});
-
-app.patch("/api/photos/:id", ownerOnly, async (c) => {
-  const parsed = photoUpdateSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: parsed.error.issues[0]?.message }, 400);
-  }
-  if (Object.keys(parsed.data).length === 0) {
-    return c.json({ error: "No photo changes provided." }, 400);
-  }
-
-  const id = c.req.param("id");
-  const photo = await updatePhoto(c.env.DB, id, parsed.data);
-  if (!photo) return c.json({ error: "Photo not found" }, 404);
-  return c.json({ photo });
-});
-
-app.delete("/api/photos/:id", ownerOnly, async (c) => {
-  const id = c.req.param("id");
-  const deleted = await deletePhoto(c.env.DB, c.env.MOMENT_BUCKET, id);
-  if (!deleted) return c.json({ error: "Photo not found" }, 404);
-  return c.body(null, 204);
 });
 
 app.get("/api/og/photos/:id", async (c) => {
-  const photo = await getPhoto(c.env.DB, c.req.param("id"));
+  const photo = await getPhoto(c.env, c.req.param("id"));
   if (!photo) return c.notFound();
 
   const pngHeaders = {
@@ -499,9 +261,9 @@ app.get("/api/og/photos/:id", async (c) => {
   if (crop.ok && crop.headers.get("Content-Type") === "image/jpeg") {
     image = `data:image/jpeg;base64,${arrayBufferToBase64(await crop.arrayBuffer())}`;
   } else {
-    const thumbnail = await c.env.MOMENT_BUCKET.get(photo.thumbnailR2Key);
+    const thumbnail = await photoImage(c.env, photo.id, "thumb");
     if (!thumbnail) return c.notFound();
-    image = `data:${mimeType(photo.thumbnailUrl)};base64,${arrayBufferToBase64(await thumbnail.arrayBuffer())}`;
+    image = `data:image/jpeg;base64,${arrayBufferToBase64(await thumbnail.arrayBuffer())}`;
   }
 
   const logo = await c.env.ASSETS.fetch(new Request(new URL("/favicon.png", c.req.url)));
@@ -538,29 +300,23 @@ app.get("/api/og/:section", async (c) => {
   let total: number;
   let urls: string[] = [];
   if (section === "gallery") {
-    total = await countPhotos(c.env.DB);
+    total = await countPhotos(c.env);
     title = "Gallery";
     subtitle = count(total, "moment");
-    urls = (await listRecentPhotos(c.env.DB, 3)).map((photo) => photo.thumbnailUrl);
+    urls = (await listRecentPhotos(c.env, 3)).map((photo) => photo.thumbnailUrl);
   } else if (section === "haul") {
-    total = await countHaul(c.env.DB);
+    total = haulItems.length;
     title = "Haul";
     subtitle = count(total, "item");
-    urls = (await listAllHaulItems(c.env.DB))
-      .flatMap((item) => (item.imageUrl ? [item.imageUrl] : []))
-      .slice(0, 3);
+    urls = haulItems.flatMap((item) => (item.imageUrl ? [item.imageUrl] : [])).slice(0, 3);
   } else if (section === "wishlist") {
-    total = await countWishlist(c.env.DB);
+    total = wishlistItems.length;
     title = "Wishlist";
     subtitle = count(total, "item");
-    urls = (await listAllWishlistItems(c.env.DB))
-      .flatMap((item) => (item.imageUrl ? [item.imageUrl] : []))
-      .slice(0, 3);
+    urls = wishlistItems.flatMap((item) => (item.imageUrl ? [item.imageUrl] : [])).slice(0, 3);
   } else if (section === "collection") {
-    const [anime, film] = await Promise.all([
-      listMediaItems(c.env.DB, "anime"),
-      listMediaItems(c.env.DB, "film"),
-    ]);
+    const anime = mediaItems.filter((item) => item.kind === "anime");
+    const film = mediaItems.filter((item) => item.kind === "film");
     total = anime.length + film.length;
     title = "Collection";
     subtitle = "Playlists, anime, films, and the things I love";
@@ -597,10 +353,12 @@ app.get("/api/og/:section", async (c) => {
   const images = (
     await Promise.all(
       urls.map(async (url) => {
-        const name = url.replace(/^\/api\/photos\//, "");
-        const obj = await c.env.MOMENT_BUCKET.get(name.startsWith("img/") ? name : `img/${name}`);
-        return obj
-          ? `data:${mimeType(url)};base64,${arrayBufferToBase64(await obj.arrayBuffer())}`
+        const photoId = url.match(/^\/api\/photos\/([^/]+)\/thumb$/);
+        const response = photoId
+          ? await photoImage(c.env, photoId[1], "thumb")
+          : await c.env.ASSETS.fetch(new Request(new URL(url, c.req.url)));
+        return response && response.ok
+          ? `data:${photoId ? "image/jpeg" : mimeType(url)};base64,${arrayBufferToBase64(await response.arrayBuffer())}`
           : null;
       }),
     )
@@ -651,204 +409,60 @@ app.get("/api/og/:section", async (c) => {
   return new Response(png, { headers: pngHeaders });
 });
 
-app.get("/api/photos/*", async (c) => {
-  const filename = c.req.path.replace(/^\/api\/photos\//, "");
-  if (!filename) return c.notFound();
-
-  const key =
-    filename.startsWith("img/thumbnails/") || filename.startsWith("img/")
-      ? filename
-      : `img/${filename}`;
-  const obj = await c.env.MOMENT_BUCKET.get(key);
-  if (!obj) return c.notFound();
-
-  const mime = mimeType(filename);
-
-  if (!obj.body) return c.notFound();
-  return new Response(obj.body, {
+app.get("/api/photos/:id/:size{original|thumb}", async (c) => {
+  const size = c.req.param("size") === "thumb" ? "thumb" : "original";
+  const image = await photoImage(c.env, c.req.param("id"), size);
+  if (!image || !image.body) return c.notFound();
+  return new Response(image.body, {
     headers: {
-      "content-type": mime,
-      "cache-control": "public, max-age=31536000, immutable",
+      "content-type": image.headers.get("content-type") || "image/jpeg",
+      "cache-control": "public, max-age=86400",
     },
   });
 });
 
+app.get("/api/profile", async (c) => c.json({ profile: await readProfile(c.env) }));
+
+app.get("/api/vesper/connect", async (c) =>
+  c.redirect(await authorize(c.env, new URL("/api/vesper/callback", c.req.url).toString())),
+);
+
+app.get("/api/vesper/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  if (!code || !state) return c.text(c.req.query("error") || "Missing code.", 400);
+  await callback(c.env, new URL("/api/vesper/callback", c.req.url).toString(), code, state);
+  await c.env.MOMENT_CACHE.delete("vesper:photos");
+  return c.redirect("/");
+});
+
 app.get("/api/tags", async (c) => {
-  return c.json({ tags: await listTagCounts(c.env.DB) });
+  return c.json({ tags: await listTagCounts(c.env) });
 });
 
-app.put("/api/tags/:name", ownerOnly, async (c) => {
-  const oldName = decodeURIComponent(c.req.param("name"));
-  const parsed = z
-    .object({ name: z.string().trim().min(1, "name is required") })
-    .safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: parsed.error.issues[0]?.message }, 400);
-  }
+app.get("/api/haul", (c) => c.json({ items: haulItems }));
 
-  const ok = await renameTag(c.env.DB, oldName, parsed.data.name);
-  if (!ok) return c.json({ error: "Tag not found or name already exists" }, 404);
-  return c.json({ ok: true });
+app.get("/api/haul/:id", (c) => {
+  const item = haulItems.find((entry) => entry.id === c.req.param("id"));
+  return item ? c.json(item) : c.json({ error: "Not found" }, 404);
 });
 
-app.delete("/api/tags/:name", ownerOnly, async (c) => {
-  const name = decodeURIComponent(c.req.param("name"));
-  const ok = await deleteTag(c.env.DB, name);
-  if (!ok) return c.json({ error: "Tag not found" }, 404);
-  return c.json({ ok: true });
+app.get("/api/wish", (c) => c.json({ items: wishlistItems }));
+
+app.get("/api/wish/:id", (c) => {
+  const item = wishlistItems.find((entry) => entry.id === c.req.param("id"));
+  return item ? c.json(item) : c.json({ error: "Not found" }, 404);
 });
 
-app.get("/api/haul", async (c) => {
-  const items = await listAllHaulItems(c.env.DB);
-  return c.json({ items });
-});
-
-app.get("/api/haul/:id", async (c) => {
-  const id = c.req.param("id");
-  const item = await getHaulItem(c.env.DB, id);
-  if (!item) return c.json({ error: "Not found" }, 404);
-  return c.json(item);
-});
-
-app.post("/api/haul", ownerOnly, async (c) => {
-  const parsed = goodsFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: parsed.error.issues[0]?.message }, 400);
-
-  const item = await createHaulItem(c.env.DB, c.get("ownerId"), parsed.data);
-  return c.json(item, 201);
-});
-
-app.post("/api/haul/upload", ownerOnly, async (c) => {
-  const form = await c.req.formData();
-  const result = await uploadHaulImage(c.env.MOMENT_BUCKET, form.get("file"));
-  if (!result.ok) return c.json({ error: result.error }, 400);
-  return c.json({ key: result.key, url: result.url });
-});
-
-app.put("/api/haul/:id", ownerOnly, async (c) => {
-  const parsed = goodsFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: parsed.error.issues[0]?.message }, 400);
-
-  const id = c.req.param("id");
-  const item = await updateHaulItem(c.env.DB, c.get("ownerId"), id, parsed.data);
-  if (!item) return c.json({ error: "Not found" }, 404);
-  return c.json(item);
-});
-
-app.delete("/api/haul/:id", ownerOnly, async (c) => {
-  const id = c.req.param("id");
-  const deleted = await deleteHaulItem(c.env.DB, c.env.MOMENT_BUCKET, c.get("ownerId"), id);
-  if (!deleted) return c.json({ error: "Not found" }, 404);
-  return c.json({ ok: true });
-});
-
-app.get("/api/wish", async (c) => {
-  const items = await listAllWishlistItems(c.env.DB);
-  return c.json({ items });
-});
-
-app.get("/api/wish/:id", async (c) => {
-  const id = c.req.param("id");
-  const item = await getWishlistItem(c.env.DB, id);
-  if (!item) return c.json({ error: "Not found" }, 404);
-  return c.json(item);
-});
-
-app.post("/api/wish/upload", ownerOnly, async (c) => {
-  const form = await c.req.formData();
-  const result = await uploadWishlistImage(c.env.MOMENT_BUCKET, form.get("file"));
-  if (!result.ok) return c.json({ error: result.error }, 400);
-  return c.json({ key: result.key, url: result.url });
-});
-
-app.post("/api/wish", ownerOnly, async (c) => {
-  const parsed = wishFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: parsed.error.issues[0]?.message }, 400);
-
-  const item = await createWishlistItem(c.env.DB, c.get("ownerId"), parsed.data);
-  return c.json(item, 201);
-});
-
-app.put("/api/wish/:id", ownerOnly, async (c) => {
-  const parsed = wishFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: parsed.error.issues[0]?.message }, 400);
-
-  const id = c.req.param("id");
-  const item = await updateWishlistItem(c.env.DB, c.get("ownerId"), id, parsed.data);
-  if (!item) return c.json({ error: "Not found" }, 404);
-  return c.json(item);
-});
-
-app.delete("/api/wish/:id", ownerOnly, async (c) => {
-  const id = c.req.param("id");
-  const deleted = await deleteWishlistItem(c.env.DB, c.env.MOMENT_BUCKET, c.get("ownerId"), id);
-  if (!deleted) return c.json({ error: "Not found" }, 404);
-  return c.json({ ok: true });
-});
-
-app.post("/api/wish/:id/convert", ownerOnly, async (c) => {
-  const parsed = goodsFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: parsed.error.issues[0]?.message }, 400);
-  const item = await convertWishlistItem(
-    c.env.DB,
-    c.get("ownerId"),
-    c.req.param("id"),
-    parsed.data,
-  );
-  if (!item) return c.json({ error: "Wish not found" }, 404);
-  return c.json(item, 201);
-});
-
-app.get("/api/media", async (c) => {
+app.get("/api/media", (c) => {
   const kind = mediaKindSchema.safeParse(c.req.query("kind"));
   if (!kind.success) return c.json({ error: "kind must be anime or film" }, 400);
-  const items = await listMediaItems(c.env.DB, kind.data);
-  return c.json({ items });
+  return c.json({ items: mediaItems.filter((item) => item.kind === kind.data) });
 });
 
-app.post("/api/media/upload", ownerOnly, async (c) => {
-  const form = await c.req.formData();
-  const kind = mediaKindSchema.safeParse(form.get("kind"));
-  if (!kind.success) return c.json({ error: "kind must be anime or film" }, 400);
-  const result = await uploadMediaImage(c.env.MOMENT_BUCKET, kind.data, form.get("file"));
-  if (!result.ok) return c.json({ error: result.error }, 400);
-  return c.json({ key: result.key, url: result.url });
-});
-
-app.get("/api/media/:id", async (c) => {
-  const item = await getMediaItem(c.env.DB, c.req.param("id"));
-  if (!item) return c.json({ error: "Not found" }, 404);
-  return c.json(item);
-});
-
-app.post("/api/media", ownerOnly, async (c) => {
-  const parsed = mediaFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid media" }, 400);
-  }
-  const item = await createMediaItem(c.env.DB, c.get("ownerId"), parsed.data);
-  return c.json(item, 201);
-});
-
-app.put("/api/media/:id", ownerOnly, async (c) => {
-  const parsed = mediaFormSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) {
-    return c.json({ error: parsed.error.issues[0]?.message ?? "Invalid media" }, 400);
-  }
-  const item = await updateMediaItem(c.env.DB, c.get("ownerId"), c.req.param("id"), parsed.data);
-  if (!item) return c.json({ error: "Not found" }, 404);
-  return c.json(item);
-});
-
-app.delete("/api/media/:id", ownerOnly, async (c) => {
-  const deleted = await deleteMediaItem(
-    c.env.DB,
-    c.env.MOMENT_BUCKET,
-    c.get("ownerId"),
-    c.req.param("id"),
-  );
-  if (!deleted) return c.json({ error: "Not found" }, 404);
-  return c.json({ ok: true });
+app.get("/api/media/:id", (c) => {
+  const item = mediaItems.find((entry) => entry.id === c.req.param("id"));
+  return item ? c.json(item) : c.json({ error: "Not found" }, 404);
 });
 
 app.get("/api/music", async (c) => {
@@ -899,7 +513,7 @@ app.get("/.well-known/api-catalog", (c) =>
 app.get("/sitemap.xml", (c) =>
   edgeCache(c.req.raw, c.executionCtx, async () =>
     publicResponse(
-      sitemapXml(await listRecentPhotos(c.env.DB, DISCOVERY_LIMIT), SITE_ORIGIN),
+      sitemapXml(await listRecentPhotos(c.env, DISCOVERY_LIMIT), SITE_ORIGIN),
       "application/xml; charset=utf-8",
     ),
   ),
@@ -908,7 +522,7 @@ app.get("/sitemap.xml", (c) =>
 app.get("/rss.xml", (c) =>
   edgeCache(c.req.raw, c.executionCtx, async () =>
     publicResponse(
-      rssXml(await listRecentPhotos(c.env.DB, DISCOVERY_LIMIT), SITE_ORIGIN),
+      rssXml(await listRecentPhotos(c.env, DISCOVERY_LIMIT), SITE_ORIGIN),
       "application/rss+xml; charset=utf-8",
     ),
   ),
@@ -917,7 +531,7 @@ app.get("/rss.xml", (c) =>
 app.get("/llms.txt", (c) =>
   edgeCache(c.req.raw, c.executionCtx, async () =>
     publicResponse(
-      llmsTxt(await listRecentPhotos(c.env.DB, DISCOVERY_LIMIT), SITE_ORIGIN),
+      llmsTxt(await listRecentPhotos(c.env, DISCOVERY_LIMIT), SITE_ORIGIN),
       "text/plain; charset=utf-8",
     ),
   ),

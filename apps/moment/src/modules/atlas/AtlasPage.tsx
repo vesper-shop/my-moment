@@ -23,7 +23,6 @@ const AtlasMap = lazy(() => import("./AtlasMap").then((module) => ({ default: mo
 
 const atlasSchema = z.object({
   photos: z.array(photoItemSchema),
-  canUpload: z.boolean(),
 });
 
 const VIEW_OPTIONS = [
@@ -35,7 +34,6 @@ export function AtlasPage() {
   const search = useSearch({ from: "/atlas" });
   const navigate = useNavigate({ from: "/atlas" });
   const [photos, setPhotos] = createSignal<PhotoItem[]>([]);
-  const [canUpload, setCanUpload] = createSignal(false);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal("");
   const today = new Date().toLocaleDateString("en-CA");
@@ -46,7 +44,6 @@ export function AtlasPage() {
         if (!response.ok) throw new Error("Failed to load the atlas.");
         const atlas = atlasSchema.parse(await response.json());
         setPhotos(atlas.photos);
-        setCanUpload(atlas.canUpload);
       })
       .catch((reason) =>
         setError(reason instanceof Error ? reason.message : "Failed to load the atlas."),
@@ -270,14 +267,8 @@ export function AtlasPage() {
         <PhotoViewer
           photos={scope()}
           index={viewerIndex()}
-          canEdit={canUpload()}
           onClose={closePhoto}
           onIndexChange={(i) => openPhoto(scope()[i].id)}
-          onEdit={(photo) => navigate({ to: "/photos/$id/edit", params: { id: photo.id } })}
-          onDeleted={(photo) => {
-            closePhoto();
-            setPhotos((current) => current.filter((item) => item.id !== photo.id));
-          }}
         />
       </Show>
     </main>

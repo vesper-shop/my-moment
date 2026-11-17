@@ -13,14 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtlasRouteImport } from './routes/atlas'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as SnapshotRouteImport } from './routes/snapshot'
-import { Route as UploadRouteImport } from './routes/upload'
 import { Route as CollectionIndexRouteImport } from './routes/collection/index'
-import { Route as CollectionAddRouteImport } from './routes/collection/add'
 import { Route as HaulIndexRouteImport } from './routes/haul/index'
-import { Route as HaulAddRouteImport } from './routes/haul/add'
 import { Route as WishIndexRouteImport } from './routes/wish/index'
-import { Route as WishAddRouteImport } from './routes/wish/add'
-import { Route as PhotosIdEditRouteImport } from './routes/photos/$id/edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -42,19 +37,9 @@ const SnapshotRoute = SnapshotRouteImport.update({
   path: '/snapshot',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UploadRoute = UploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CollectionIndexRoute = CollectionIndexRouteImport.update({
   id: '/collection/',
   path: '/collection/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CollectionAddRoute = CollectionAddRouteImport.update({
-  id: '/collection/add',
-  path: '/collection/add',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HaulIndexRoute = HaulIndexRouteImport.update({
@@ -62,24 +47,9 @@ const HaulIndexRoute = HaulIndexRouteImport.update({
   path: '/haul/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HaulAddRoute = HaulAddRouteImport.update({
-  id: '/haul/add',
-  path: '/haul/add',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WishIndexRoute = WishIndexRouteImport.update({
   id: '/wish/',
   path: '/wish/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WishAddRoute = WishAddRouteImport.update({
-  id: '/wish/add',
-  path: '/wish/add',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PhotosIdEditRoute = PhotosIdEditRouteImport.update({
-  id: '/photos/$id/edit',
-  path: '/photos/$id/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -88,28 +58,18 @@ export interface FileRoutesByFullPath {
   '/atlas': typeof AtlasRoute
   '/messages': typeof MessagesRoute
   '/snapshot': typeof SnapshotRoute
-  '/upload': typeof UploadRoute
-  '/collection/add': typeof CollectionAddRoute
-  '/haul/add': typeof HaulAddRoute
-  '/wish/add': typeof WishAddRoute
   '/collection/': typeof CollectionIndexRoute
   '/haul/': typeof HaulIndexRoute
   '/wish/': typeof WishIndexRoute
-  '/photos/$id/edit': typeof PhotosIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/atlas': typeof AtlasRoute
   '/messages': typeof MessagesRoute
   '/snapshot': typeof SnapshotRoute
-  '/upload': typeof UploadRoute
-  '/collection/add': typeof CollectionAddRoute
-  '/haul/add': typeof HaulAddRoute
-  '/wish/add': typeof WishAddRoute
   '/collection': typeof CollectionIndexRoute
   '/haul': typeof HaulIndexRoute
   '/wish': typeof WishIndexRoute
-  '/photos/$id/edit': typeof PhotosIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -117,14 +77,9 @@ export interface FileRoutesById {
   '/atlas': typeof AtlasRoute
   '/messages': typeof MessagesRoute
   '/snapshot': typeof SnapshotRoute
-  '/upload': typeof UploadRoute
-  '/collection/add': typeof CollectionAddRoute
-  '/haul/add': typeof HaulAddRoute
-  '/wish/add': typeof WishAddRoute
   '/collection/': typeof CollectionIndexRoute
   '/haul/': typeof HaulIndexRoute
   '/wish/': typeof WishIndexRoute
-  '/photos/$id/edit': typeof PhotosIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,42 +88,27 @@ export interface FileRouteTypes {
     | '/atlas'
     | '/messages'
     | '/snapshot'
-    | '/upload'
-    | '/collection/add'
-    | '/haul/add'
-    | '/wish/add'
     | '/collection/'
     | '/haul/'
     | '/wish/'
-    | '/photos/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/atlas'
     | '/messages'
     | '/snapshot'
-    | '/upload'
-    | '/collection/add'
-    | '/haul/add'
-    | '/wish/add'
     | '/collection'
     | '/haul'
     | '/wish'
-    | '/photos/$id/edit'
   id:
     | '__root__'
     | '/'
     | '/atlas'
     | '/messages'
     | '/snapshot'
-    | '/upload'
-    | '/collection/add'
-    | '/haul/add'
-    | '/wish/add'
     | '/collection/'
     | '/haul/'
     | '/wish/'
-    | '/photos/$id/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,14 +116,9 @@ export interface RootRouteChildren {
   AtlasRoute: typeof AtlasRoute
   MessagesRoute: typeof MessagesRoute
   SnapshotRoute: typeof SnapshotRoute
-  UploadRoute: typeof UploadRoute
-  CollectionAddRoute: typeof CollectionAddRoute
-  HaulAddRoute: typeof HaulAddRoute
-  WishAddRoute: typeof WishAddRoute
   CollectionIndexRoute: typeof CollectionIndexRoute
   HaulIndexRoute: typeof HaulIndexRoute
   WishIndexRoute: typeof WishIndexRoute
-  PhotosIdEditRoute: typeof PhotosIdEditRoute
 }
 
 declare module '@tanstack/solid-router' {
@@ -216,25 +151,11 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof SnapshotRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/upload': {
-      id: '/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof UploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/collection/': {
       id: '/collection/'
       path: '/collection'
       fullPath: '/collection/'
       preLoaderRoute: typeof CollectionIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/collection/add': {
-      id: '/collection/add'
-      path: '/collection/add'
-      fullPath: '/collection/add'
-      preLoaderRoute: typeof CollectionAddRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/haul/': {
@@ -244,32 +165,11 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof HaulIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/haul/add': {
-      id: '/haul/add'
-      path: '/haul/add'
-      fullPath: '/haul/add'
-      preLoaderRoute: typeof HaulAddRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/wish/': {
       id: '/wish/'
       path: '/wish'
       fullPath: '/wish/'
       preLoaderRoute: typeof WishIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/wish/add': {
-      id: '/wish/add'
-      path: '/wish/add'
-      fullPath: '/wish/add'
-      preLoaderRoute: typeof WishAddRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/photos/$id/edit': {
-      id: '/photos/$id/edit'
-      path: '/photos/$id/edit'
-      fullPath: '/photos/$id/edit'
-      preLoaderRoute: typeof PhotosIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -280,14 +180,9 @@ const rootRouteChildren: RootRouteChildren = {
   AtlasRoute: AtlasRoute,
   MessagesRoute: MessagesRoute,
   SnapshotRoute: SnapshotRoute,
-  UploadRoute: UploadRoute,
-  CollectionAddRoute: CollectionAddRoute,
-  HaulAddRoute: HaulAddRoute,
-  WishAddRoute: WishAddRoute,
   CollectionIndexRoute: CollectionIndexRoute,
   HaulIndexRoute: HaulIndexRoute,
   WishIndexRoute: WishIndexRoute,
-  PhotosIdEditRoute: PhotosIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

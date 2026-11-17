@@ -36,8 +36,6 @@ export const photoItemSchema = z.object({
   id: z.string(),
   url: z.string(),
   thumbnailUrl: z.string(),
-  r2Key: z.string(),
-  thumbnailR2Key: z.string(),
   thumbHash: z.string().optional(),
   title: z.string(),
   width: z.number(),

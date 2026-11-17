@@ -1,22 +1,7 @@
 import { Show, For, Match, Switch, createSignal, createEffect, type Accessor } from "solid-js";
-import {
-  Dialog,
-  DialogContent,
-  DialogBody,
-  Button,
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-  toast,
-} from "@my-moment/ui";
-import { Plus, Pencil, Trash2, Share2, ShoppingBag } from "lucide-solid";
-import { Link, useNavigate } from "@tanstack/solid-router";
-import { useOwner } from "~/lib/services/auth";
+import { Dialog, DialogContent, DialogBody, Button } from "@my-moment/ui";
+import { Share2 } from "lucide-solid";
+import {} from "@tanstack/solid-router";
 import { shareLink } from "~/lib/share";
 import { PageHeader } from "~/components/PageHeader";
 import { EmptyState } from "~/components/EmptyState";
@@ -31,15 +16,10 @@ interface WishPageProps {
 }
 
 export function WishPage(props: WishPageProps) {
-  const owner = useOwner();
-  const navigate = useNavigate();
-
   const wishItems = () => props.wishes()?.items;
 
   const [selectedWish, setSelectedWish] = createSignal<WishItem | null>(null);
   const [showWishDetail, setShowWishDetail] = createSignal(false);
-  const [deletingWish, setDeletingWish] = createSignal<WishItem | null>(null);
-  const [showWishDelete, setShowWishDelete] = createSignal(false);
 
   const shareWishlistLink = () =>
     void shareLink({
@@ -65,25 +45,6 @@ export function WishPage(props: WishPageProps) {
     },
   );
 
-  const handleWishDelete = async () => {
-    const item = deletingWish();
-    if (!item) return;
-    try {
-      const res = await fetch(`/api/wish/${item.id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Removed from wishlist");
-        setShowWishDelete(false);
-        setDeletingWish(null);
-        props.onRetry();
-      } else {
-        toast.error("Failed to remove item");
-      }
-    } catch (e) {
-      console.error("Failed to delete wish item:", e);
-      toast.error("Failed to remove item");
-    }
-  };
-
   return (
     <div>
       <PageHeader
@@ -97,15 +58,6 @@ export function WishPage(props: WishPageProps) {
             >
               <Share2 size={11} />
             </button>
-            <Show when={owner()}>
-              <Link
-                to="/wish/add"
-                class="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Add wish"
-              >
-                <Plus size={12} />
-              </Link>
-            </Show>
           </>
         }
         subtitle={
@@ -127,11 +79,7 @@ export function WishPage(props: WishPageProps) {
               fallback={
                 <EmptyState
                   title="No wishes yet"
-                  description={
-                    owner()
-                      ? "Use the add button to save something you want."
-                      : "Nothing has been added to this wishlist yet."
-                  }
+                  description={"Nothing has been added to this wishlist yet."}
                 />
               }
             >
@@ -162,23 +110,6 @@ export function WishPage(props: WishPageProps) {
                   <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold">{item().name}</h2>
                     <div class="flex items-center gap-1 ml-2 shrink-0">
-                      <Show when={owner()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="size-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            setShowWishDetail(false);
-                            navigate({
-                              to: "/haul/add",
-                              search: { convert: item().id },
-                            });
-                          }}
-                          aria-label="Mark as purchased"
-                        >
-                          <ShoppingBag size={14} />
-                        </Button>
-                      </Show>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -188,36 +119,6 @@ export function WishPage(props: WishPageProps) {
                       >
                         <Share2 size={14} />
                       </Button>
-                      <Show when={owner()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="size-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            setShowWishDetail(false);
-                            navigate({
-                              to: "/wish/add",
-                              search: { edit: item().id },
-                            });
-                          }}
-                          aria-label="Edit wish"
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="size-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => {
-                            setShowWishDetail(false);
-                            setDeletingWish(item());
-                            setShowWishDelete(true);
-                          }}
-                          aria-label="Delete wish"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </Show>
                     </div>
                   </div>
                   <Show when={item().imageUrl}>
@@ -241,33 +142,6 @@ export function WishPage(props: WishPageProps) {
           </DialogBody>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={showWishDelete()} onOpenChange={setShowWishDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Wish</AlertDialogTitle>
-            <AlertDialogDescription>
-              Remove "{deletingWish()?.name ?? ""}" from your wishlist?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              as={Button}
-              variant="outline"
-              onClick={() => {
-                setShowWishDelete(false);
-                setDeletingWish(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction as={Button} variant="destructive" onClick={handleWishDelete}>
-              <Trash2 size={14} />
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

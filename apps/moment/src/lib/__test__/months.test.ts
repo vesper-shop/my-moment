@@ -6,8 +6,6 @@ const base: PhotoItem = {
   id: "base",
   url: "/api/photos/base.png",
   thumbnailUrl: "/api/photos/thumbnails/base.jpg",
-  r2Key: "img/base.png",
-  thumbnailR2Key: "img/thumbnails/base.jpg",
   title: "base",
   width: 1,
   height: 1,

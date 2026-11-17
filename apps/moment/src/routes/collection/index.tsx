@@ -1,13 +1,12 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/solid-router";
-import { Errored, Loading, Match, Show, Switch, createMemo } from "solid-js";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/solid-router";
+import { Errored, Loading, Match, Switch, createMemo } from "solid-js";
 import { z } from "zod";
-import { Plus } from "lucide-solid";
+import {} from "lucide-solid";
 import { Button, Spinner } from "@my-moment/ui";
 import { PageHeader } from "~/components/PageHeader";
 import { Segment, type SegmentOption } from "~/components/Segment";
 import { EmptyState } from "~/components/EmptyState";
 import { MusicView, PosterGrid } from "~/modules/collection";
-import { useOwner } from "~/lib/services/auth";
 import type { MediaItem } from "~/types";
 import { publicPageMeta } from "~/lib/seo";
 
@@ -32,7 +31,6 @@ export const Route = createFileRoute("/collection/")({
 });
 
 function CollectionPage() {
-  const owner = useOwner();
   const search = useSearch({ from: "/collection/" });
   const navigate = useNavigate({ from: "/collection/" });
   const section = () => search().view;
@@ -48,7 +46,6 @@ function CollectionPage() {
     return response.json();
   });
 
-  const addHref = () => (section() === "anime" ? "anime" : "film");
   const isMusic = () => section() === "music";
 
   return (
@@ -58,18 +55,6 @@ function CollectionPage() {
           title="Collection"
           class={isMusic() ? "mb-4" : undefined}
           subtitle="Playlists, anime, films, and the things I love."
-          actions={
-            <Show when={owner() && !isMusic()}>
-              <Link
-                to="/collection/add"
-                search={{ kind: addHref() }}
-                class="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Add item"
-              >
-                <Plus size={12} />
-              </Link>
-            </Show>
-          }
           controls={
             <Segment<CollectionSection>
               options={SECTION_OPTIONS}

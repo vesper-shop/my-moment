@@ -1,6 +1,6 @@
 import { createSignal, Show } from "solid-js";
-import { Link, useNavigate, useSearch } from "@tanstack/solid-router";
-import { Share2, SlidersHorizontal, Upload } from "lucide-solid";
+import { useNavigate, useSearch } from "@tanstack/solid-router";
+import { Share2, SlidersHorizontal } from "lucide-solid";
 import { Segment } from "~/components/Segment";
 import { PageHeader } from "~/components/PageHeader";
 import { Button, Spinner } from "@my-moment/ui";
@@ -24,7 +24,6 @@ interface PhotosRootProps {
   photos: PhotoItem[];
   tags: TagCount[];
   total: number;
-  canUpload: boolean;
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
@@ -37,9 +36,8 @@ export function PhotosRoot(props: PhotosRootProps) {
   const navigate = useNavigate({ from: "/" });
   const [viewMode, setViewMode] = createSignal<ViewMode>("grid");
   const [showFilters, setShowFilters] = createSignal(false);
-  const [deletedPhotoIds, setDeletedPhotoIds] = createSignal(new Set<string>());
 
-  const photos = () => props.photos.filter((photo) => !deletedPhotoIds().has(photo.id));
+  const photos = () => props.photos;
   const filtered = () => settings().selectedTags.length > 0;
 
   const openPhoto = (photo: string) =>
@@ -64,15 +62,6 @@ export function PhotosRoot(props: PhotosRootProps) {
             >
               <Share2 size={11} />
             </button>
-            <Show when={props.canUpload}>
-              <Link
-                to="/upload"
-                class="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Upload photos"
-              >
-                <Upload size={12} />
-              </Link>
-            </Show>
           </>
         }
         subtitle={
@@ -139,17 +128,11 @@ export function PhotosRoot(props: PhotosRootProps) {
         <PhotoViewer
           photos={photos()}
           index={viewerIndex()}
-          canEdit={props.canUpload}
           onClose={closePhoto}
           onIndexChange={(i) => {
             openPhoto(photos()[i].id);
             // Fetch the next page before the viewer reaches the last loaded photo.
             if (props.hasMore && i >= photos().length - 2) props.onLoadMore();
-          }}
-          onEdit={(photo) => navigate({ to: "/photos/$id/edit", params: { id: photo.id } })}
-          onDeleted={(photo) => {
-            closePhoto();
-            setDeletedPhotoIds((current) => new Set(current).add(photo.id));
           }}
         />
       </Show>

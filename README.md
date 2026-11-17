@@ -4,32 +4,37 @@ Personal moments — [moment.you-find.me](https://moment.you-find.me)
 
 ## Stack
 
-Vite+ · Void · SolidJS · TypeScript · TailwindCSS v4 · Hono · TanStack Router · Better Auth · Cloudflare Workers · D1 · R2 · KV · Durable Objects · Mapbox
+Vite+ · Void · SolidJS · TypeScript · TailwindCSS v4 · Hono · TanStack Router · Cloudflare Workers · KV · Mapbox · giscus
 
 ## Features
 
-- **Gallery** — photos in masonry and list views
+- **Gallery** — the public photos of the [Vesper](https://noted-this.date) journal @yiming1234, in masonry and list views
 - **Atlas** — every photo on a map and on a calendar
 - **Collection** — playlists, anime, and films
-- **Guestbook** — signed-in messages with replies
+- **Guestbook** — GitHub Discussions through giscus, above the notes kept from the old guestbook
 - **Haul / Wishlist** — purchases and wants
+
+Collection, haul and wishlist are static data in `apps/moment/src/data/collection.json`, with their
+images in `apps/moment/public/img/`; edit them in the repository.
+
+## Data
+
+Photos live in Vesper. The worker reads them with a workspace API token (`VESPER_TOKEN`), shows only
+entries made public there, and caches the list for five minutes. Opening `/api/vesper/connect` once
+signs the owner in through OAuth so the header card can show the workspace handle and link to
+`https://<handle>.noted-this.date/`; the callback checks the workspace UUID and refuses any other.
+Add, edit and delete photos in Vesper.
 
 ## API
 
-One REST surface under `/api`, described by
-[`/api/openapi.json`](https://moment.you-find.me/api/openapi.json). Reads need no token; writes take
-the owner session or an access token issued by the you-find.me gateway (`moment:write` scope).
+Read-only, under `/api`, described by
+[`/api/openapi.json`](https://moment.you-find.me/api/openapi.json).
 
 ```sh
 curl https://moment.you-find.me/api/photos?search=edinburgh
-curl -X PATCH -H "Authorization: Bearer $MOMENT_ACCESS_TOKEN" -H "Content-Type: application/json" \
-  -d '{"tags":["travel"]}' https://moment.you-find.me/api/photos/<id>
 ```
 
-The MCP endpoint at `/api/mcp` takes the same token; clients discover the gateway from
-`/.well-known/oauth-protected-resource`, register and sign the owner in: `list_photos`, `search_photos`, `get_photo`,
-`create_photo`, `update_photo`, `delete_photo`, `list_tags`. `/llms.txt` and
-`/.well-known/api-catalog` list these entry points.
+`/llms.txt` and `/.well-known/api-catalog` list these entry points.
 
 ## References
 

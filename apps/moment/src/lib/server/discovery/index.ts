@@ -6,8 +6,6 @@ export const DISCOVERY_LIMIT = 5000;
 const FEED_PHOTO_LIMIT = 50;
 const SUMMARY_LENGTH = 160;
 
-const DISALLOWED_PATHS = ["/upload", "/collection/add", "/haul/add", "/wish/add", "/*/edit"];
-
 const IMAGE_MIME_TYPES: Record<string, string> = {
   webp: "image/webp",
   png: "image/png",
@@ -66,7 +64,6 @@ export function robotsTxt(origin: string): string {
     "Allow: /api/photos/",
     "Allow: /api/openapi.json",
     "Disallow: /api/",
-    ...DISALLOWED_PATHS.map((path) => `Disallow: ${path}`),
     "",
     `Sitemap: ${new URL("/sitemap.xml", origin).href}`,
     "",
@@ -162,8 +159,7 @@ export function llmsTxt(photos: readonly PhotoItem[], origin: string): string {
     "",
     "## API",
     "",
-    `- [REST API](${new URL("/api/openapi.json", origin).href}): ${new URL("/api", origin).href} for photos (list, search, read, write) and tags. Reads need no token; writes require \`Authorization: Bearer <access token>\` issued by you-find.me or the owner session.`,
-    `- [MCP](${new URL("/api/mcp", origin).href}): Stateless MCP endpoint with the same Bearer key.`,
+    `- [REST API](${new URL("/api/openapi.json", origin).href}): ${new URL("/api", origin).href} for photos (list, search, read) and tags, read-only. Photos come from the Vesper journal @yiming1234.`,
     `- [Anime](${new URL("/api/media?kind=anime", origin).href}): Watched anime with notes and dates, no key required; films at ${new URL("/api/media?kind=film", origin).href}.`,
     `- [Haul](${new URL("/api/haul", origin).href}): Purchases with brand, price, rating and comments, no key required.`,
     `- [Wishlist](${new URL("/api/wish", origin).href}): Wanted items with brand and price, no key required.`,

@@ -17,8 +17,8 @@ minimumReleaseAgeExclude:
   - "@tanstack/router-plugin@1.168.48"
 
 overrides:
-  vite@*: npm:@voidzero-dev/vite-plus-core@1.5.0
+  vite@*: npm:@voidzero-dev/vite-plus-core@1.6.0
   vitest@*: 5.1.0
 
 patchedDependencies:
-  lucide-solid@1.69.0: patches/lucide-solid@1.69.0.patch
+  lucide-solid@1.73.0: patches/lucide-solid@1.73.0.patch

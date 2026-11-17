@@ -9,8 +9,6 @@ function photo(overrides: Partial<PhotoItem> = {}): PhotoItem {
     id: "photo-1",
     url: "/api/photos/photo-1.webp",
     thumbnailUrl: "/api/photos/img/thumbnails/photo-1.webp",
-    r2Key: "img/photo-1.webp",
-    thumbnailR2Key: "img/thumbnails/photo-1.webp",
     title: "Harbor [dusk]",
     width: 800,
     height: 600,
@@ -30,10 +28,9 @@ describe("discovery documents", () => {
     );
   });
 
-  it("lists the public and owner API entry points before the content in llms.txt", () => {
+  it("lists the read-only API entry point before the content in llms.txt", () => {
     const llms = llmsTxt([photo()], origin);
     expect(llms).toContain("- [Anime](https://moment.example/api/media?kind=anime)");
-    expect(llms).toContain("- [MCP](https://moment.example/api/mcp)");
     expect(llms.indexOf("## API")).toBeLessThan(llms.indexOf("## Moments"));
   });
 

@@ -24,21 +24,6 @@ export type {
   WishFormInput,
   WishItem,
 } from "./haul";
-export type {
-  CreateMessageResult,
-  GuestbookMessage,
-  MessageAuthor,
-  MessageCountRecord,
-  MessageCursor,
-  MessageMutationResponse,
-  MessageOwner,
-  MessageOwnerRecord,
-  MessageRecord,
-  MessageRowProps,
-  MessagesResponse,
-  MessageTimestampRecord,
-} from "./messages";
-export { messageMutationResponseSchema, messagesResponseSchema } from "./messages";
 export { photoItemSchema, tagCountSchema } from "./photo";
 export type { PhotoItem, TagCount } from "./photo";
 export type {

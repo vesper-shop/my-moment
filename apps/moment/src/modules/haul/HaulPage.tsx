@@ -8,27 +8,12 @@ import {
   createEffect,
   type Accessor,
 } from "solid-js";
-import {
-  Dialog,
-  DialogContent,
-  DialogBody,
-  Button,
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-  toast,
-} from "@my-moment/ui";
-import { Plus, SlidersHorizontal, Pencil, Trash2, Share2 } from "lucide-solid";
-import { Link, useNavigate } from "@tanstack/solid-router";
+import { Dialog, DialogContent, DialogBody, Button } from "@my-moment/ui";
+import { SlidersHorizontal, Share2 } from "lucide-solid";
+import {} from "@tanstack/solid-router";
 import { PageHeader } from "~/components/PageHeader";
 import { EmptyState } from "~/components/EmptyState";
 import { shareLink } from "~/lib/share";
-import { useOwner } from "~/lib/services/auth";
 import { GoodsCard } from "./GoodsCard";
 import { FilterBar } from "./FilterBar";
 import type { FilterState, GoodsItem, Rating } from "~/types";
@@ -41,9 +26,6 @@ interface HaulPageProps {
 }
 
 export function HaulPage(props: HaulPageProps) {
-  const owner = useOwner();
-  const navigate = useNavigate();
-
   const items = () => props.haul()?.items;
 
   const [filter, setFilter] = createSignal<FilterState>({
@@ -56,8 +38,6 @@ export function HaulPage(props: HaulPageProps) {
 
   const [selectedItem, setSelectedItem] = createSignal<GoodsItem | null>(null);
   const [showDetail, setShowDetail] = createSignal(false);
-  const [deletingItem, setDeletingItem] = createSignal<GoodsItem | null>(null);
-  const [showDeleteAlert, setShowDeleteAlert] = createSignal(false);
 
   const filteredItems = createMemo(() => {
     const data = items();
@@ -151,25 +131,6 @@ export function HaulPage(props: HaulPageProps) {
     },
   );
 
-  const handleDelete = async () => {
-    const item = deletingItem();
-    if (!item) return;
-    try {
-      const res = await fetch(`/api/haul/${item.id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Item deleted");
-        setShowDeleteAlert(false);
-        setDeletingItem(null);
-        props.onRetry();
-      } else {
-        toast.error("Failed to delete item");
-      }
-    } catch (e) {
-      console.error("Failed to delete haul item:", e);
-      toast.error("Failed to delete item");
-    }
-  };
-
   return (
     <div>
       <PageHeader
@@ -183,15 +144,6 @@ export function HaulPage(props: HaulPageProps) {
             >
               <Share2 size={11} />
             </button>
-            <Show when={owner()}>
-              <Link
-                to="/haul/add"
-                class="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Add item"
-              >
-                <Plus size={12} />
-              </Link>
-            </Show>
           </>
         }
         subtitle={
@@ -242,11 +194,7 @@ export function HaulPage(props: HaulPageProps) {
                 fallback={
                   <EmptyState
                     title="No items yet"
-                    description={
-                      owner()
-                        ? "Use the add button to collect your first item."
-                        : "Nothing has been added to this collection yet."
-                    }
+                    description={"Nothing has been added to this collection yet."}
                   />
                 }
               >
@@ -300,36 +248,6 @@ export function HaulPage(props: HaulPageProps) {
                       >
                         <Share2 size={14} />
                       </Button>
-                      <Show when={owner()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="size-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => {
-                            setShowDetail(false);
-                            navigate({
-                              to: "/haul/add",
-                              search: { edit: item().id },
-                            });
-                          }}
-                          aria-label="Edit item"
-                        >
-                          <Pencil size={14} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          class="size-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => {
-                            setShowDetail(false);
-                            setDeletingItem(item());
-                            setShowDeleteAlert(true);
-                          }}
-                          aria-label="Delete item"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </Show>
                     </div>
                   </div>
                   <Show when={item().imageUrl}>
@@ -378,33 +296,6 @@ export function HaulPage(props: HaulPageProps) {
           </DialogBody>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={showDeleteAlert()} onOpenChange={setShowDeleteAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Item</AlertDialogTitle>
-            <AlertDialogDescription>
-              Remove "{deletingItem()?.name ?? ""}" from your haul? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              as={Button}
-              variant="outline"
-              onClick={() => {
-                setShowDeleteAlert(false);
-                setDeletingItem(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction as={Button} variant="destructive" onClick={handleDelete}>
-              <Trash2 size={14} />
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
