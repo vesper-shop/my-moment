@@ -3,9 +3,8 @@ import type { WorkerBindings } from "~/types";
 
 export const VESPER_ORIGIN = "https://noted-this.date";
 const RESOURCE = `${VESPER_ORIGIN}/mcp`;
-const SCOPE = "entries:read offline_access";
+const SCOPE = "entries:read";
 const CLIENT_KEY = "vesper:client";
-const GRANT_KEY = "vesper:grant";
 const HEADERS = { "user-agent": "my-moment" };
 
 const metadataSchema = z.object({
@@ -14,11 +13,7 @@ const metadataSchema = z.object({
   registration_endpoint: z.string(),
 });
 const clientSchema = z.object({ client_id: z.string(), redirect_uri: z.string() });
-const tokenSchema = z.object({
-  access_token: z.string(),
-  refresh_token: z.string().optional(),
-  expires_in: z.number(),
-});
+const tokenSchema = z.object({ access_token: z.string() });
 const pendingSchema = z.object({ verifier: z.string() });
 const workspaceSchema = z.object({
   workspace: z.object({ id: z.string(), handle: z.string() }),
@@ -71,7 +66,7 @@ async function client(env: WorkerBindings, redirectUri: string) {
       body: JSON.stringify({
         client_name: "My Moment",
         redirect_uris: [redirectUri],
-        grant_types: ["authorization_code", "refresh_token"],
+        grant_types: ["authorization_code"],
         response_types: ["code"],
         token_endpoint_auth_method: "none",
         scope: SCOPE,
@@ -138,7 +133,6 @@ export async function callback(
       }),
     ),
   );
-  if (!tokens.refresh_token) throw new VesperError("Vesper did not grant offline access.");
   const me = await read(
     workspaceSchema,
     await fetch(`${VESPER_ORIGIN}/api/workspace`, {
@@ -147,7 +141,6 @@ export async function callback(
   );
   if (me.workspace.id !== (await ownerId(env)))
     throw new VesperError("This Vesper workspace is not the one this site belongs to.");
-  await saveGrant(env, tokens, tokens.refresh_token);
   await env.MOMENT_CACHE.put(
     PROFILE_KEY,
     JSON.stringify({
@@ -156,20 +149,6 @@ export async function callback(
       image: me.profile.image,
     }),
   );
-}
-
-async function saveGrant(
-  env: WorkerBindings,
-  tokens: z.output<typeof tokenSchema>,
-  previous: string,
-) {
-  const grant = {
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token || previous,
-    expiresAt: Date.now() + tokens.expires_in * 1000,
-  };
-  await env.MOMENT_CACHE.put(GRANT_KEY, JSON.stringify(grant));
-  return grant;
 }
 
 async function ownerId(env: WorkerBindings) {

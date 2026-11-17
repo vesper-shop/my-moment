@@ -19,7 +19,8 @@ images in `apps/moment/public/img/`; edit them in the repository.
 
 ## Data
 
-Photos live in Vesper. The worker reads them with a workspace API token (`VESPER_TOKEN`), shows only
+Photos live in Vesper. The worker reads them with a workspace API token (`VESPER_TOKEN`, scopes
+`entries:read` and `photos:read`), shows only
 entries made public there, and caches the list for five minutes. Opening `/api/vesper/connect` once
 signs the owner in through OAuth so the header card can show the workspace handle and link to
 `https://<handle>.noted-this.date/`; the callback checks the workspace UUID and refuses any other.
